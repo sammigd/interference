@@ -61,6 +61,9 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
   dimnames(hajboots) <- dimnames(boots)
   dimnames(oehtboots) <- dimnames(boots)[-1]
   
+  b_ht_list = c()
+  b_haj_list = c()
+  
   for (bb in 1:B){
     #bb = 1
     boot_dta <- GetBootSample(dta)
@@ -77,6 +80,10 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
                                 neigh_ind = neigh_ind,
                                 loud_denom = F, fix_phi = T, const_size = T)
     
+    ypop_boot_ht = Ypop_sd(ygroup = ygroup_boot, horvitzthompson = T, dta = boot_dta)
+    ypop_boot_haj = Ypop_sd(ygroup = ygroup_boot, horvitzthompson = F, dta = boot_dta)
+    
+    
     ygb = ygroup_boot$yhat_group
   
     hh <- make_hajek(ygroup_boot, boot_dta)
@@ -91,6 +98,38 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
     oehajboots[,bb] <- hh$oe_haj #pot outcomes by gamma
     
     chosen_clusters[,bb] = chosenclusters 
+    
+    #oe for each bootstrap
+    boot_oe_ht = OE_sd(ypop = ypop_boot_ht,
+                       ygroup = ygroup_boot$oe_yhat_group,
+                       hajofygroup = hh$oe_haj,
+                       horvitzthompson = T)
+    boot_oe_haj = OE_sd(ypop = ypop_boot_haj,
+                        ygroup = ygroup_boot$oe_yhat_group,
+                        hajofygroup = hh$oe_haj,
+                        horvitzthompson = F)
+    #betas:) 
+    #print(boot_oe_ht$oe_cov)
+    #print(boot_oe_ht)
+    #print(str(boot_oe_ht))
+    
+    ww_ht = MASS::ginv(boot_oe_ht$oe_var)
+    ww_haj = MASS::ginv(boot_oe_haj$oe_var)
+    gg = rbind(1, gamma_list[2,])
+    
+    #print('*')
+    #print(dim(gg))
+    #print(dim(ww_ht))
+    #print(dim(ww_haj))
+    #print(dim(boot_oe_ht$oe))
+  
+    
+    b_ht = MASS::ginv((gg) %*% ww_ht %*% t(gg)) %*% (gg) %*% ww_ht %*% (boot_oe_ht$oe['est',, ncol(gamma_numer)])
+    b_haj = MASS::ginv((gg) %*% ww_haj %*% t(gg)) %*% (gg) %*% ww_haj %*% (boot_oe_haj$oe['est',,ncol(gamma_numer)])
+    
+    b_ht_list = append(b_ht_list, b_ht[2])
+    b_haj_list = append(b_haj_list, b_haj[2])
+    
   }
   
   
@@ -99,6 +138,8 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
               chosen_clusters=chosen_clusters,
               boots = boots,
               oehajboots = oehajboots,
-              oehtboots = oehtboots)) 
+              oehtboots = oehtboots,
+              b_ht = b_ht_list,
+              b_haj = b_haj_list)) 
 } 
   

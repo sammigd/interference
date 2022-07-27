@@ -35,25 +35,23 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
             'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj') 
 
-#get the beta testing whether it is worth intervening on a variable
-slopes = c()
-for (i in alliters[1]){
-  load(i)
-  gg = cbind(1, gamma_numer[2,1:33])
-  ww = MASS::ginv(test$oe_cov[1:33, 1:33])
-  
+#######################################
+# POWER TESTING FOR FLAT OE ###########
+#######################################
 
-  #cov_gammas = fixed2Zcor(test$oe_cov, id = gamma_numer[2,], waves = 1)
-  bhat = solve(t(gg) %*% ww %*% gg) %*% t(gg) %*% ww %*% test$oe['est', 1:33]
-  slopes = append(slopes, bhat[2])
-  
-  #variance calculation
-  
+#get list of trial runs
+iters = alliters[str_detect(alliters, parmlist[1])]
+
+#for each run, see if test gives flat result
+sigresults = c()
+for (i in 1:length(iters)){
+  load(iters[i])
+  if(is.na(test$oe[1,1])){next}
+  sigresults = append(sigresults, oe_sigtest(test$oe, test$oe_cov))
 }
-quantile(slopes, c(.025, .975), na.rm = T)
-sd(slopes, na.rm = T)
-mean(slopes, na.rm = T) + 1.96 * sd(slopes, na.rm = T)
-mean(slopes, na.rm = T) - 1.96 * sd(slopes, na.rm = T)
+table(sigresults)
+
+
 
 
 get_means = function(which_iter, e.names){

@@ -60,7 +60,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols, interference = c('none', 'hom
   clust_avg2 = apply(clust_avg, c(3,2), mean, na.rm = T)  #avg over all of the clusters
   
   clust_avg_oe = clust_avg_oe / nn
-  clust_avg_oe =  apply(clust_avg_oe, 2, mean, na.rm = T)
+  clust_avg_oe2 =  apply(clust_avg_oe, 2, mean, na.rm = T)
   
   ie = array(NA, dim = c(2,length(gamma_numer[2,]),length(gamma_numer[2,])))
   oe = array(NA, dim = c(length(gamma_numer[2,]), length(gamma_numer[2,])))
@@ -68,11 +68,12 @@ get_het_ie <- function(dta, gamma_numer, cov_cols, interference = c('none', 'hom
   for (a1 in 1 : length(gamma_numer[2,])) {
     for (a2 in 1 : length(gamma_numer[2,])) {
       ie[, a1, a2] <- clust_avg2[,a1] - clust_avg2[,a2]
-      oe[a1, a2] <- clust_avg_oe[a1] - clust_avg_oe[a2]
+      oe[a1, a2] <- clust_avg_oe2[a1] - clust_avg_oe2[a2]
     }
   }
 
   
-  return(list(clust_avg2, ie = ie, oe = oe))
+  return(list(clust_avg2, ie = ie, oe = oe,
+              true_y_ie = clust_avg, true_y_oe = clust_avg_oe))
 }
 

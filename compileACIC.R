@@ -1,15 +1,27 @@
 #compile big sim results
 library(tidyverse)
-library(geepack)
+source('scripts/compile_helper_funcs.R')
+#library(geepack)
 
 #want separate analysis for each set of parameters
 ngam = 100
+gl = seq(from = -.2, to = .2, length.out = 33)
+ngl = rep(0, 33)
+gamma_list = rbind(rep(0, 99),
+                   c(gl, ngl, ngl),
+                   c(ngl, gl, ngl),
+                   c(ngl, ngl, gl))
+gamma_list = cbind(gamma_list, c(0,0,0,0))
 
+beta_0 = .1
+beta_1 = 3
 #read in all of the simulations
-setwd("~/project/cai/testinginterventionvar")
+setwd("~/project/cai/florence_400clusters")
+#setwd("~/project/cai/florence")
 alliters = list.files()
 
 #load(alliters[1])
+
 
 #bigsims_homogtest_bigoe - folder with 200 sims of b3 = 3 to see if its a magnitude issue
 #bigsims_threecovar - results for ACIC
@@ -19,9 +31,10 @@ alliters = list.files()
 #load(alliters[1])
 
 #parameter sets 
-parmlist = table(str_remove(alliters, word(alliters, sep = '_')))
-parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))
-parmlist = parmlist[1:18]
+table(str_remove(alliters, word(alliters, sep = '_')))
+parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-1]
+#parmlist = parmlist[1:18]
+
 #will want to change this to looping over each of the parmlist elements i think
 #iters = alliters[str_detect(alliters, parmlist[9])]
 
@@ -33,124 +46,48 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'indirect1_haj', 'indirect1_analyticalvar_haj', 'indirect1_bootvar_haj',
             'oe_haj', 'oe_analyticalvar_haj', 'oe_bootvar_haj',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
-            'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj') 
+            'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
+            'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
+            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj') 
 
 #######################################
 # POWER TESTING FOR FLAT OE ###########
 #######################################
+source('~/project/cai/scripts/oe_stattest.R')
 
-#get list of trial runs
-iters = alliters[str_detect(alliters, parmlist[1])]
+#get counts
+table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
 
-#for each run, see if test gives flat result
-sigresults = c()
-for (i in 1:length(iters)){
-  load(iters[i])
-  if(is.na(test$oe[1,1])){next}
-  sigresults = append(sigresults, oe_sigtest(test$oe, test$oe_cov))
-}
-table(sigresults)
-
-
-
-
-get_means = function(which_iter, e.names){
-  #which_iter = 1
-  iters = alliters[str_detect(alliters, parmlist[which_iter])]
-  
-  for(i in e.names){
-    assign(i, array(NA, dim = c(ngam, length(iters)), dimnames(list('gammas', 'iters'))))
-  }
-  
-  #EXTRACT ALL THE ESTIMATES FROM THE ITERATIONS
+empty = matrix(nrow = length(alliters), ncol = 3)
+ind = 1
+for (pset in 1:length(parmlist)){
+  iters = alliters[str_detect(alliters, parmlist[pset])]
   for (i in 1:length(iters)){
-    #i = 1
-    wk = iters[i]
-    #wk = "scenario255_1_1_0.65.RSave"
-    load(wk)
-    
-    #potential outcomes
-    y0_ht[,i] = test$unadj[1,]
-    y1_ht[,i] = test$unadj[2,]
-    
-    y0_haj[,i] = test$haj[1,]
-    y1_haj[,i] = test$haj[2,]
-    
-    #direct effect and error
-    # haj and ht
-    direct_ht[,i] = test$ht_direct["est",]
-    direct_analyticalvar_ht[,i] = test$ht_direct["var",]
-    direct_bootvar_ht[,i] = test$ht_direct["boot_var",]
-    
-    direct_haj[,i] = test$direct["est",]
-    direct_analyticalvar_haj[,i] = test$direct["var",]
-    direct_bootvar_haj[,i] = test$direct["boot_var",]
-    
-    #indirect effect and error
-    # haj and ht
-    indirect0_haj[,i] = test$indirect0['est',]
-    indirect0_analyticalvar_haj[,i] = test$indirect0['var',]
-    indirect0_bootvar_haj[,i] = test$indirect0['boot_var',]
-    
-    indirect1_haj[,i] = test$indirect1['est',]
-    indirect1_analyticalvar_haj[,i] = test$indirect1['var',]
-    indirect1_bootvar_haj[,i] = test$indirect1['boot_var',]
-    
-    indirect0_ht[,i] = test$ht_indirect0['est',]
-    indirect0_analyticalvar_ht[,i] = test$ht_indirect0['var',]
-    indirect0_bootvar_ht[,i] = test$ht_indirect0['boot_var',]
-    
-    indirect1_ht[,i] = test$ht_indirect1['est',]
-    indirect1_analyticalvar_ht[,i] = test$ht_indirect1['var',]
-    indirect1_bootvar_ht[,i] = test$ht_indirect1['boot_var',]
-    
-    #overall effect and error
-    #haj and ht
-    oe_haj[,i] = test$oe['est',]
-    oe_analyticalvar_haj[,i] = test$oe['var',]
-    oe_bootvar_haj[,i] = test$oe['boot_var',]
-    
-    oe_ht[,i] = test$ht_oe['est',]
-    oe_analyticalvar_ht[,i] = test$ht_oe['var',]
-    oe_bootvar_ht[,i] = test$ht_oe['boot_var',]
-    
-    #true ie
-    true_ie0[,i] = test$het_ie_truth$ie[1,,ngam]
-    true_ie1[,i] = test$het_ie_truth$ie[2,,ngam]
-    true_oe[,i] = test$het_ie_truth$oe[,ngam]
+    load(iters[i])
+    if(is.na(test$oe[1,1])){next}
+    testresult = oe_sigtest(test$oe, test$oe_cov)
+    sigresults = append(sigresults, testresult$accept)
+    maxlist = append(maxlist, testresult$diff)
+    empty[ind,1] = parmlist[pset]
+    empty[ind,2] = testresult$accept #is sig?
+    empty[ind,3] = testresult$diff #max difference
+    ind = ind + 1
   }
-  
-  #true_oe_boot = apply(true_oe, 1, mean)
-  
-  #now i have the vector for each sim. next - average over the sims
-  estimates = list(direct_ht, direct_analyticalvar_ht, direct_bootvar_ht, #HERE!!!
-                   direct_haj, direct_analyticalvar_haj, direct_bootvar_haj,
-                   indirect0_ht, indirect0_analyticalvar_ht, indirect0_bootvar_ht,
-                   indirect0_haj, indirect0_analyticalvar_haj, indirect0_bootvar_haj,
-                   indirect1_ht, indirect1_analyticalvar_ht, indirect1_bootvar_ht,
-                   indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
-                   oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
-                   oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-                   true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj)
-  
-  for(i in 1:length(e.names)){
-    est = estimates[[i]]
-    cal = apply(est, 1, mean, na.rm=T)
-    assign(e.names[i], cal)
-  }
-  return(list(direct_ht, direct_analyticalvar_ht, direct_bootvar_ht, #HERE!!!
-              direct_haj, direct_analyticalvar_haj, direct_bootvar_haj,
-              indirect0_ht, indirect0_analyticalvar_ht, indirect0_bootvar_ht,
-              indirect0_haj, indirect0_analyticalvar_haj, indirect0_bootvar_haj,
-              indirect1_ht, indirect1_analyticalvar_ht, indirect1_bootvar_ht,
-              indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
-              oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
-              oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-              true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj))
 }
+empty = data.frame(empty)
+names(empty) = c('parms', 'TF', 'teststat')
 
+summary_tab = data.frame(table(empty$parms, empty$TF)) %>% 
+  pivot_wider(names_from = Var2, values_from = Freq) %>%
+  mutate(total = `FALSE` + `TRUE`,
+         acc_rate =  `TRUE` / total,
+         rej_rate = `FALSE` / total)
+
+#########
+
+
+bigbiastab = array(NA, dim = c(0, 30))
 #compare bias for all the different parameters
-bigbiastab = array(NA, dim = c(0, 28))
 for (parms in 1:length(parmlist)){
   print(parms)
   #parms = 1
@@ -174,52 +111,66 @@ for (parms in 1:length(parmlist)){
            bias_ie0_ht = (indirect0_ht - true_ie0),  bias_ie1_ht = (indirect1_ht - true_ie1),
            bias_ie0_haj = (indirect0_haj - true_ie0), bias_ie1_haj = (indirect1_haj - true_ie1),
            label = pretty_parm, concordance = concordance,
-           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj=y0_haj)
+           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
+           oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
+           oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
+           de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
+           de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj
+           )
   bigbiastab = rbind(bigbiastab, biastab)
-}
+} 
 bigbiastab2 = bigbiastab %>% pivot_longer(cols = bias_de_ht:bias_ie0_haj, names_to = 'which_estimator', values_to = 'bias')
+
+#bias investigation
+bias_tab = bigbiastab %>% filter(gamma_ind == "X1") 
+ggplot(bias_tab, aes(x = g, y = bias_oe_ht)) + 
+  geom_point(alpha = .4) + 
+  facet_wrap(~label) + 
+  geom_hline(yintercept = 0) + 
+  xlab('gamma') + 
+  ylab('oe bias (haj)') + 
+  title('Bias In Hajek Overall Effect')
+
+
+boxplot(bias_tab$bias_oe_ht ~ bias_tab$g)
+abline(h=0, col = 'red')
+boxplot(bigbiastab$bias_oe_haj ~ bigbiastab$g)
+abline(h=0, col = 'red')
+
+
 #bias for each set of params
 ggplot(bigbiastab2, aes(x = g, y = bias)) + 
   geom_point() + 
   facet_wrap(~which_estimator + label, ncol = length(parmlist))
 
-bigbiastab = bigbiastab %>% 
-  mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(direct_bootvar_ht),
-         de_ht_ana_ub = de_ht + 1.96*sqrt(direct_bootvar_ht),
-         ie0_ht_ana_lb = ie0_ht - 1.96*sqrt(indirect0_bootvar_ht),
-         ie0_ht_ana_ub = ie0_ht + 1.96*sqrt(indirect0_bootvar_ht),
-         ie1_ht_ana_lb = ie1_ht - 1.96*sqrt(indirect1_bootvar_ht),
-         ie1_ht_ana_ub = ie1_ht + 1.96*sqrt(indirect1_bootvar_ht),
-         oe_ht_ana_lb = oe_ht - 1.96*sqrt(oe_bootvar_ht),
-         oe_ht_ana_ub = oe_ht + 1.96*sqrt(oe_bootvar_ht),
-         de_haj_ana_lb = de_haj - 1.96*sqrt(direct_bootvar_haj),
-         de_haj_ana_ub = de_haj + 1.96*sqrt(direct_bootvar_haj),
-         ie0_haj_ana_lb = ie0_haj - 1.96*sqrt(indirect0_bootvar_haj),
-         ie0_haj_ana_ub = ie0_haj + 1.96*sqrt(indirect0_bootvar_haj),
-         ie1_haj_ana_lb = ie1_haj - 1.96*sqrt(indirect1_bootvar_haj),
-         ie1_haj_ana_ub = ie1_haj + 1.96*sqrt(indirect1_bootvar_haj),
-         oe_haj_ana_lb = oe_haj - 1.96*sqrt(oe_bootvar_haj),
-         oe_haj_ana_ub = oe_haj + 1.96*sqrt(oe_bootvar_haj)) %>%
-  filter(gamma_ind != 'X3')
+og = bigbiastab #flo 400
+og2 = bigbiastab #flo 200
+bigbiastab = og2
 
-bigbiastab = bigbiastab %>% 
-  mutate(de_ht_ana_lb = bias_de_ht - 1.96*sqrt(direct_analyticalvar_ht),
-         de_ht_ana_ub = bias_de_ht + 1.96*sqrt(direct_analyticalvar_ht),
-         ie0_ht_ana_lb = bias_ie0_ht - 1.96*sqrt(indirect0_analyticalvar_ht),
-         ie0_ht_ana_ub = bias_ie0_ht + 1.96*sqrt(indirect0_analyticalvar_ht),
-         ie1_ht_ana_lb = bias_ie1_ht - 1.96*sqrt(indirect1_analyticalvar_ht),
-         ie1_ht_ana_ub = bias_ie1_ht + 1.96*sqrt(indirect1_analyticalvar_ht),
-         oe_ht_ana_lb = bias_oe_ht - 1.96*sqrt(oe_analyticalvar_ht),
-         oe_ht_ana_ub = bias_oe_ht + 1.96*sqrt(oe_analyticalvar_ht),
-         de_haj_ana_lb = bias_oe_haj - 1.96*sqrt(direct_analyticalvar_haj),
-         de_haj_ana_ub = bias_oe_haj + 1.96*sqrt(direct_analyticalvar_haj),
-         ie0_haj_ana_lb = bias_ie0_haj - 1.96*sqrt(indirect0_analyticalvar_haj),
-         ie0_haj_ana_ub = bias_ie0_haj + 1.96*sqrt(indirect0_analyticalvar_haj),
-         ie1_haj_ana_lb = bias_ie1_haj - 1.96*sqrt(indirect1_analyticalvar_haj),
-         ie1_haj_ana_ub = bias_ie1_haj + 1.96*sqrt(indirect1_analyticalvar_haj),
-         oe_haj_ana_lb = bias_oe_haj - 1.96*sqrt(oe_analyticalvar_haj),
-         oe_haj_ana_ub = bias_oe_haj + 1.96*sqrt(oe_analyticalvar_haj)) %>%
-  filter(gamma_ind != 'X3')
+#pick a for analytical variance, b for bootstrapped variance
+bigbiastab = pick_var('a', bigbiastab)
+bigbiastab = bigbiastab %>% filter(gamma_ind =='X1')
+test = bigbiastab %>% filter(g == '0.0125', gamma_ind =='X1')
+
+table(bigbiastab$g)
+
+#coverage'
+cov_tab = bigbiastab %>% filter(gamma_ind =='X1') %>%
+  select(label, g, gamma_ind, oe_anacoverage_ht) %>% distinct()
+table(bigbiastab$gamma_ind)
+
+pdf("/gpfs/ysm/project/forastiere/sgd37/cai/figures/covtab_400clusters.png")  
+boxplot(cov_tab$oe_anacoverage_ht ~ cov_tab$g, xlab = 'gamma', ylab = 'oe coverage', main = 'oe haj coverage with 200 clusters')
+abline(h = 0.95 , col = 'red')
+abline(h = 0.5 , col = 'pink')
+dev.off()
+
+
+#ggsave("/gpfs/ysm/project/forastiere/sgd37/cai/figures/covtab.png")
+mean(cov_tab$de_anacoverage_haj)
+
+
+
 
 #potential outcomes
 y_bias_tab = bigbiastab %>%
@@ -300,6 +251,10 @@ ggplot(oe_bias_tab %>% filter(gamma_ind == 'X1'), aes(x = g, y = bias_oe_ht, fil
   theme(strip.text = element_text(size = 5))+
   labs(title = 'Overall Effect Bias - HT and Haj')
 
+#get oe true for power calcs
+testing = oe_bias_tab %>% group_by(label, g) %>% summarise(true_oe = mean(true_oe))
+testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe)))
+
 #Does the "truth" make sense
 ggplot(bigbiastab %>% pivot_longer(true_oe:true_de),aes(x = g, y = value)) + 
   geom_line() +   
@@ -315,6 +270,10 @@ ggplot(bigbiastab %>% pivot_longer(c(ie0_haj, ie1_haj)) %>%filter(gamma_ind == '
 
 library(ggtext)
 
+#wht does confidence interval look the same for every scenario?
+
+
+
 #oe comp
 fig2df = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)) %>%
   #filter(gamma_ind == 'X1') %>%
@@ -322,6 +281,7 @@ fig2df = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)) %>%
   mutate(Interference = case_when(str_detect(label, 'beta4 = 0,') ~ 'No Interference',
                                   str_detect(label, 'beta4 = 0.5') ~ 'Moderate Interference',
                                   str_detect(label, 'beta4 = 1') ~ 'Strong Interference')) %>%
+  filter(!is.na(Interference)) %>%
   mutate(Conc = case_when(concordance == '0' ~ 'X1,X2 Uncorrelated',
                           concordance == '0.8' ~ 'X1,X2 Highly Correlated')) %>%
   mutate(Interference = factor(Interference, levels = c('No Interference',
@@ -331,7 +291,7 @@ fig2df = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)) %>%
          name = ifelse(name == 'oe_haj', 'Hajek OE', 'True OE'),
          name = factor(name, levels = c( 'True OE','Hajek OE')))
 
-install.packages('latex2exp')
+#install.packages('latex2exp')
 library(latex2exp)
 
 ggplot(fig2df %>% filter(gamma_ind == 'X1'),aes(x = g, y = value, colour = name)) + 
@@ -347,7 +307,7 @@ ggplot(fig2df %>% filter(gamma_ind == 'X1'),aes(x = g, y = value, colour = name)
   facet_grid(rows = vars(Conc), cols = vars(Interference)) + 
   xlab(TeX(r'(\gamma)'))+ 
   ylab('Overall Effect') + ylim(-.042,.042)
-#ggsave('x1intervention.png', width = 1100, height = 750)
+#ggsave('x1intervention.png', width = 7, height = 5)
 #library(Cairo)
 #cairo_pdf(file = "~/project/cai/ggplot-greek.pdf", width = 8, height = 5)
 ## ggplot object created here

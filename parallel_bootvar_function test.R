@@ -103,11 +103,11 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
     boot_oe_ht = OE_sd(ypop = ypop_boot_ht,
                        ygroup = ygroup_boot$oe_yhat_group,
                        hajofygroup = hh$oe_haj,
-                       horvitzthompson = T)
+                       horvitzthompson = T, true_ygroup =  ygroup_boot$oe_yhat_group) #here i dont have the true ygroup from the heterogeneous truth func so i just put in the estimated one to avoid bug. messy but shoudl fix..
     boot_oe_haj = OE_sd(ypop = ypop_boot_haj,
                         ygroup = ygroup_boot$oe_yhat_group,
                         hajofygroup = hh$oe_haj,
-                        horvitzthompson = F)
+                        horvitzthompson = F, true_ygroup =  ygroup_boot$oe_yhat_group)
     #betas:) 
     #print(boot_oe_ht$oe_cov)
     #print(boot_oe_ht)

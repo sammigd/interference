@@ -91,6 +91,12 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     oe_bootcoverage_ht[,i] = (true_oe[,i] >= test$ht_oe['boot_var_LB',]) &  (true_oe[,i] <= test$ht_oe['boot_var_UB',]) 
     oe_bootcoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
     
+    lb = test$ht_oe['est',] - 1.96 * test$ht_oe_mcvar
+    ub = test$ht_oe['est',] + 1.96 * test$ht_oe_mcvar
+    
+    oe_mccoverage_ht[,i] = (true_oe[,i] >= lb) &  (true_oe[,i] <= ub) 
+    #oe_mccoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
+    
     #de coverage
     de_anacoverage_ht[,i] = (3 >= test$ht_direct['low_int',]) & (3 <= test$ht_direct['high_int',])
     de_anacoverage_haj[,i] = (3 >= test$direct['low_int',]) & (3 <= test$direct['high_int',])
@@ -118,7 +124,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
                    true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
                    oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
                    de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
-                   oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht
+                   oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht, oe_mccoverage_ht
   )
   
   for(i in 1:length(e.names)){
@@ -137,7 +143,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
               true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
               oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
               de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
-              oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht))
+              oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht, oe_mccoverage_ht))
 }
 
 

@@ -6,7 +6,7 @@ source('scripts/compile_helper_funcs.R')
 
 #load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/sep29wkspc.Rsave")
 
-save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
+#save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
 
 
 #want separate analysis for each set of parameters
@@ -55,7 +55,7 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
             'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj',
-            'oe_truecov_ht', 'oe_truevar_ht', 'oe_mcvar_ht') 
+            'oe_truecov_ht', 'oe_truevar_ht', 'oe_mcvar_ht', 'oe_mccoverage_ht') 
 
 #######################################
 # POWER TESTING FOR FLAT OE ###########
@@ -124,7 +124,7 @@ for (parms in 1:length(parmlist)){
            de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
            de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
            oe_truecov_ht = oe_truecov_ht, oe_truevar_ht = oe_truevar_ht, oe_bootvar_ht = oe_bootvar_ht, oe_analyticalvar_ht = oe_analyticalvar_ht,
-           oe_mcvar_ht = oe_mcvar_ht
+           oe_mcvar_ht = oe_mcvar_ht, oe_mccoverage_ht = oe_mccoverage_ht
            )
   bigbiastab = rbind(bigbiastab, biastab)
 } 
@@ -180,14 +180,14 @@ vartab = bigbiastab %>%
   dplyr::select(label, g, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
   pivot_longer(oe_analyticalvar_ht:oe_mcvar_ht) 
 ggplot(vartab, aes(x = g, y = value, colour = name)) + 
-  geom_point(alpha = 0.5) + 
+  geom_line(alpha = 0.5) + 
   facet_wrap(~label) + 
   ggtitle('Comparison of True, Bootstrapped, and Analytical Variance for OE, HT') #+ ylim(0, 1E-4) #for zoomed in version
 
 #comparing coverages
 covtab = bigbiastab %>% 
-  dplyr::select(label, g, oe_truecov_ht, oe_anacoverage_ht, oe_bootcoverage_ht) %>% 
-  pivot_longer(oe_truecov_ht:oe_bootcoverage_ht) 
+  dplyr::select(label, g, oe_anacoverage_ht, oe_bootcoverage_ht, oe_mccoverage_ht) %>% 
+  pivot_longer(oe_anacoverage_ht:oe_mccoverage_ht) 
 ggplot(covtab, aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 

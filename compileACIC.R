@@ -180,9 +180,10 @@ vartab = bigbiastab %>%
   dplyr::select(label, g, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
   pivot_longer(oe_analyticalvar_ht:oe_mcvar_ht) 
 ggplot(vartab, aes(x = g, y = value, colour = name)) + 
-  geom_line(alpha = 0.5) + 
+  geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of True, Bootstrapped, and Analytical Variance for OE, HT') #+ ylim(0, 1E-4) #for zoomed in version
+  ggtitle('Comparison of True, Bootstrapped, and Analytical Variance for OE, HT
+          \n beta4=0 -> trueoe=0 and n_i = 5 and no rnorm') #+ ylim(0, 1E-4) #for zoomed in version
 
 #comparing coverages
 covtab = bigbiastab %>% 
@@ -191,8 +192,8 @@ covtab = bigbiastab %>%
 ggplot(covtab, aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of True, Bootstrapped, and Analytical Coverage for OE, HT
-          \n beta4=0 -> trueoe=0') +
+  ggtitle('Comparison of True, Bootstrapped, and MC Coverage for OE, HT
+          \n beta4=0 -> trueoe=0 and n_i = 5 and no rnorm') +
   ylab('coverage') + 
   geom_hline(yintercept = 0.95)
 

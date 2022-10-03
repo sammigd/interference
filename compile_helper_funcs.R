@@ -91,8 +91,8 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     oe_bootcoverage_ht[,i] = (true_oe[,i] >= test$ht_oe['boot_var_LB',]) &  (true_oe[,i] <= test$ht_oe['boot_var_UB',]) 
     oe_bootcoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
     
-    lb = test$ht_oe['est',] - 1.96 * test$ht_oe_mcvar
-    ub = test$ht_oe['est',] + 1.96 * test$ht_oe_mcvar
+    lb = test$ht_oe['est',] - (1.96 * sqrt(test$ht_oe_mcvar))
+    ub = test$ht_oe['est',] + (1.96 * sqrt(test$ht_oe_mcvar))
     
     oe_mccoverage_ht[,i] = (true_oe[,i] >= lb) &  (true_oe[,i] <= ub) 
     #oe_mccoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])

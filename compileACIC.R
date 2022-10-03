@@ -1,7 +1,13 @@
 #compile big sim results
 library(tidyverse)
+setwd("/gpfs/ysm/project/forastiere/sgd37/cai")
 source('scripts/compile_helper_funcs.R')
 #library(geepack)
+
+#load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/sep29wkspc.Rsave")
+
+save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
+
 
 #want separate analysis for each set of parameters
 ngam = 100
@@ -16,7 +22,7 @@ gamma_list = cbind(gamma_list, c(0,0,0,0))
 beta_0 = .1
 beta_1 = 3
 #read in all of the simulations
-setwd("~/project/cai/florence_400clusters")
+setwd("~/project/cai/florence_n5_v2")
 #setwd("~/project/cai/florence")
 alliters = list.files()
 
@@ -48,7 +54,8 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
             'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
-            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj') 
+            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj',
+            'oe_truecov_ht', 'oe_truevar_ht', 'oe_mcvar_ht') 
 
 #######################################
 # POWER TESTING FOR FLAT OE ###########
@@ -115,7 +122,9 @@ for (parms in 1:length(parmlist)){
            oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
            oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
            de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
-           de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj
+           de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
+           oe_truecov_ht = oe_truecov_ht, oe_truevar_ht = oe_truevar_ht, oe_bootvar_ht = oe_bootvar_ht, oe_analyticalvar_ht = oe_analyticalvar_ht,
+           oe_mcvar_ht = oe_mcvar_ht
            )
   bigbiastab = rbind(bigbiastab, biastab)
 } 
@@ -148,27 +157,44 @@ og2 = bigbiastab #flo 200
 bigbiastab = og2
 
 #pick a for analytical variance, b for bootstrapped variance
-bigbiastab = pick_var('a', bigbiastab)
-bigbiastab = bigbiastab %>% filter(gamma_ind =='X1')
-test = bigbiastab %>% filter(g == '0.0125', gamma_ind =='X1')
+bigbiastab = pick_var('b', bigbiastab)
+bigbiastab = bigbiastab %>% filter(gamma_ind =='X1', (true_oe == 0 | g !='0'), concordance ==0)
+test = bigbiastab %>% filter(g == '0', gamma_ind =='X1')
 
 table(bigbiastab$g)
 
 #coverage'
-cov_tab = bigbiastab %>% filter(gamma_ind =='X1') %>%
-  select(label, g, gamma_ind, oe_anacoverage_ht) %>% distinct()
+cov_tab = bigbiastab %>%
+  select(label, g, gamma_ind, oe_truecov_ht) %>% distinct()
 table(bigbiastab$gamma_ind)
 
 pdf("/gpfs/ysm/project/forastiere/sgd37/cai/figures/covtab_400clusters.png")  
-boxplot(cov_tab$oe_anacoverage_ht ~ cov_tab$g, xlab = 'gamma', ylab = 'oe coverage', main = 'oe haj coverage with 200 clusters')
+boxplot(cov_tab$oe_truecov_ht ~ cov_tab$g, xlab = 'gamma', ylab = 'oe coverage', main = 'oe ht true variance coverage with 200 clusters')
 abline(h = 0.95 , col = 'red')
 abline(h = 0.5 , col = 'pink')
 dev.off()
 
 
-#ggsave("/gpfs/ysm/project/forastiere/sgd37/cai/figures/covtab.png")
-mean(cov_tab$de_anacoverage_haj)
+#comparing variances
+vartab = bigbiastab %>% 
+  dplyr::select(label, g, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
+  pivot_longer(oe_analyticalvar_ht:oe_mcvar_ht) 
+ggplot(vartab, aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of True, Bootstrapped, and Analytical Variance for OE, HT') #+ ylim(0, 1E-4) #for zoomed in version
 
+#comparing coverages
+covtab = bigbiastab %>% 
+  dplyr::select(label, g, oe_truecov_ht, oe_anacoverage_ht, oe_bootcoverage_ht) %>% 
+  pivot_longer(oe_truecov_ht:oe_bootcoverage_ht) 
+ggplot(covtab, aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of True, Bootstrapped, and Analytical Coverage for OE, HT
+          \n beta4=0 -> trueoe=0') +
+  ylab('coverage') + 
+  geom_hline(yintercept = 0.95)
 
 
 

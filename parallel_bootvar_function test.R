@@ -41,8 +41,8 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
                        return_everything = FALSE,
                        gamma_numer) {
   #B = 2
-  num_gamma_cols <- ifelse(is.null(ncol(gamma_numer)), 1, ncol(gamma_numer))
-  
+  ngam <- ifelse(is.null(ncol(gamma_numer)), 1, ncol(gamma_numer))
+  ngam = 100
   n_neigh <- max(dta$neigh)
   
   chosen_clusters <- array(NA, dim = c(n_neigh, B))
@@ -57,12 +57,19 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
   oehajboots <- array(NA, dim = c(ncol(gamma_numer), B))
   oehtboots <- array(NA, dim = c(ncol(gamma_numer), B))
   
+  oe_est_haj <- array(NA, dim = c(ncol(gamma_numer), B))
+  oe_est_ht <- array(NA, dim = c(ncol(gamma_numer), B))
+  
   dimnames(boots) <- dimnames(ygroup)[-1]
   dimnames(hajboots) <- dimnames(boots)
   dimnames(oehtboots) <- dimnames(boots)[-1]
   
-  b_ht_list = c()
-  b_haj_list = c()
+  dimnames(oe_est_haj) <- dimnames(boots)[-1]
+  dimnames(oe_est_ht) <- dimnames(boots)[-1]
+  
+  
+  ##b_ht_list = c()
+  ##b_haj_list = c()
   
   for (bb in 1:B){
     #bb = 1
@@ -104,18 +111,23 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
                        ygroup = ygroup_boot$oe_yhat_group,
                        hajofygroup = hh$oe_haj,
                        horvitzthompson = T, true_ygroup =  ygroup_boot$oe_yhat_group) #here i dont have the true ygroup from the heterogeneous truth func so i just put in the estimated one to avoid bug. messy but shoudl fix..
+    #print(dim( oe_est_ht[,bb]))
+    #print(dim(boot_oe_ht$oe[,,ngam]))
+    oe_est_ht[,bb] = boot_oe_ht$oe['est',,ngam]
     boot_oe_haj = OE_sd(ypop = ypop_boot_haj,
                         ygroup = ygroup_boot$oe_yhat_group,
                         hajofygroup = hh$oe_haj,
                         horvitzthompson = F, true_ygroup =  ygroup_boot$oe_yhat_group)
+    oe_est_haj[,bb] = boot_oe_haj$oe['est',,ngam]
+    
     #betas:) 
     #print(boot_oe_ht$oe_cov)
     #print(boot_oe_ht)
     #print(str(boot_oe_ht))
     
-    ww_ht = MASS::ginv(boot_oe_ht$oe_var)
-    ww_haj = MASS::ginv(boot_oe_haj$oe_var)
-    gg = rbind(1, gamma_list[2,])
+    ##ww_ht = MASS::ginv(boot_oe_ht$oe_var)
+    ##ww_haj = MASS::ginv(boot_oe_haj$oe_var)
+    ##gg = rbind(1, gamma_list[2,])
     
     #print('*')
     #print(dim(gg))
@@ -124,11 +136,11 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
     #print(dim(boot_oe_ht$oe))
   
     
-    b_ht = MASS::ginv((gg) %*% ww_ht %*% t(gg)) %*% (gg) %*% ww_ht %*% (boot_oe_ht$oe['est',, ncol(gamma_numer)])
-    b_haj = MASS::ginv((gg) %*% ww_haj %*% t(gg)) %*% (gg) %*% ww_haj %*% (boot_oe_haj$oe['est',,ncol(gamma_numer)])
+    ##b_ht = MASS::ginv((gg) %*% ww_ht %*% t(gg)) %*% (gg) %*% ww_ht %*% (boot_oe_ht$oe['est',, ncol(gamma_numer)])
+    ##b_haj = MASS::ginv((gg) %*% ww_haj %*% t(gg)) %*% (gg) %*% ww_haj %*% (boot_oe_haj$oe['est',,ncol(gamma_numer)])
     
-    b_ht_list = append(b_ht_list, b_ht[2])
-    b_haj_list = append(b_haj_list, b_haj[2])
+    #b_ht_list = append(b_ht_list, b_ht[2])
+    #b_haj_list = append(b_haj_list, b_haj[2])
     
   }
   
@@ -137,9 +149,11 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
               ygroup = ygroup,
               chosen_clusters=chosen_clusters,
               boots = boots,
-              oehajboots = oehajboots,
+              oehajboots = oehajboots,#these are potential outcomes
               oehtboots = oehtboots,
-              b_ht = b_ht_list,
-              b_haj = b_haj_list)) 
+              #b_ht = b_ht_list,
+              #b_haj = b_haj_list
+              oe_est_ht = oe_est_ht,
+              oe_est_haj = oe_est_haj)) 
 } 
   

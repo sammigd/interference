@@ -68,19 +68,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
       true_oe[,i] = 0
     }else{
       true_oe[,i] = test$het_ie_truth$oe[,ngam]
-      
     }
-    
-    #true oe var
-    true_oevar_list = c()
-    #applying delta method here because i forgot to do this earlier in the code. move to earlier eventually
-    for (a in 1:ngam){ #loop over gammas
-      true_oevar_list = append(true_oevar_list, delta_method(test$ht_oe_truevar[c(ngam, a), c(ngam, a)]))
-    }
-    lb = test$ht_oe['est',] - 1.96*true_oevar_list
-    ub = test$ht_oe['est',] + 1.96*true_oevar_list
-    oe_truevar_ht[,i] = true_oevar_list
-    oe_truecov_ht[,i] = (true_oe[,i] >= lb) & (true_oe[,i] >= ub)
     
     oe_mcvar_ht[,i] = test$ht_oe_mcvar
     
@@ -90,12 +78,6 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     
     oe_bootcoverage_ht[,i] = (true_oe[,i] >= test$ht_oe['boot_var_LB',]) &  (true_oe[,i] <= test$ht_oe['boot_var_UB',]) 
     oe_bootcoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
-    
-    lb = test$ht_oe['est',] - (1.96 * sqrt(test$ht_oe_mcvar))
-    ub = test$ht_oe['est',] + (1.96 * sqrt(test$ht_oe_mcvar))
-    
-    oe_mccoverage_ht[,i] = (true_oe[,i] >= lb) &  (true_oe[,i] <= ub) 
-    #oe_mccoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
     
     #de coverage
     de_anacoverage_ht[,i] = (3 >= test$ht_direct['low_int',]) & (3 <= test$ht_direct['high_int',])
@@ -124,14 +106,18 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
                    true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
                    oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
                    de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
-                   oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht, oe_mccoverage_ht
+                   oe_mcvar_ht
   )
   
+  oe_mcvar_ht = apply(oe_ht, 1, var)
+  
+  #take the mean of the 600 simulations
   for(i in 1:length(e.names)){
     est = estimates[[i]]
-    cal = apply(est, 1, mean, na.rm=T)
-    assign(e.names[i], cal)
+    cal = apply(est, 1, mean, na.rm = T)
+    if(e.names[i] != 'oe_mcvar_ht'){assign(e.names[i], cal)}
   }
+  
   return(list(direct_ht, direct_analyticalvar_ht, direct_bootvar_ht, #HERE!!!
               direct_haj, direct_analyticalvar_haj, direct_bootvar_haj,
               indirect0_ht, indirect0_analyticalvar_ht, indirect0_bootvar_ht,
@@ -143,7 +129,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
               true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
               oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
               de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
-              oe_truecov_ht, oe_truevar_ht, oe_mcvar_ht, oe_mccoverage_ht))
+              oe_mcvar_ht))
 }
 
 

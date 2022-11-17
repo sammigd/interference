@@ -4,9 +4,9 @@ setwd("/gpfs/ysm/project/forastiere/sgd37/cai")
 source('scripts/compile_helper_funcs.R')
 #library(geepack)
 
-#load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/sep29wkspc.Rsave")
+#load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
 
-save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
+#save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/nov13wkspc.Rsave")
 
 
 #want separate analysis for each set of parameters
@@ -22,8 +22,7 @@ gamma_list = cbind(gamma_list, c(0,0,0,0))
 beta_0 = .1
 beta_1 = 3
 #read in all of the simulations
-setwd("~/project/cai/florence_n5_v2")
-#setwd("~/project/cai/florence")
+setwd("~/project/cai/florence_varfix_big")
 alliters = list.files()
 
 #load(alliters[1])
@@ -52,9 +51,13 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'indirect1_haj', 'indirect1_analyticalvar_haj', 'indirect1_bootvar_haj',
             'oe_haj', 'oe_analyticalvar_haj', 'oe_bootvar_haj',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
-            'true_ie0', 'true_ie1', 'true_oe', 'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
+            'true_ie0', 'true_ie1', 'true_oe', 'true_de',
+            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
-            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj', 'oe_mcvar_ht') 
+            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj', 'oe_mcvar_ht',
+            'ie0_anacoverage_ht', 'ie0_anacoverage_haj', 'ie0_bootcoverage_ht', 'ie0_bootcoverage_haj'
+)
+
 
 #######################################
 # POWER TESTING FOR FLAT OE ###########
@@ -122,12 +125,11 @@ for (parms in 1:length(parmlist)){
            oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
            de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
            de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
-           oe_truecov_ht = oe_truecov_ht, oe_truevar_ht = oe_truevar_ht, oe_bootvar_ht = oe_bootvar_ht, oe_analyticalvar_ht = oe_analyticalvar_ht,
+           oe_bootvar_ht = oe_bootvar_ht, oe_analyticalvar_ht = oe_analyticalvar_ht,
            oe_mcvar_ht = oe_mcvar_ht
            )
   bigbiastab = rbind(bigbiastab, biastab)
 } 
-bigbiastab2 = bigbiastab %>% pivot_longer(cols = bias_de_ht:bias_ie0_haj, names_to = 'which_estimator', values_to = 'bias')
 
 #bias investigation
 bias_tab = bigbiastab %>% filter(gamma_ind == "X1") 
@@ -137,65 +139,43 @@ ggplot(bias_tab, aes(x = g, y = bias_oe_ht)) +
   geom_hline(yintercept = 0) + 
   xlab('gamma') + 
   ylab('oe bias (haj)') + 
-  title('Bias In Hajek Overall Effect')
-
+  ggtitle('Bias In Hajek Overall Effect')
 
 boxplot(bias_tab$bias_oe_ht ~ bias_tab$g)
 abline(h=0, col = 'red')
 boxplot(bigbiastab$bias_oe_haj ~ bigbiastab$g)
 abline(h=0, col = 'red')
 
-
-#bias for each set of params
-ggplot(bigbiastab2, aes(x = g, y = bias)) + 
-  geom_point() + 
-  facet_wrap(~which_estimator + label, ncol = length(parmlist))
-
 og = bigbiastab #flo 400
-og2 = bigbiastab #flo 200
-bigbiastab = og2
+#bigbiastab = og
 
 #pick a for analytical variance, b for bootstrapped variance
 bigbiastab = pick_var('b', bigbiastab)
-bigbiastab = bigbiastab %>% filter(gamma_ind =='X1', (true_oe == 0 | g !='0'), concordance ==0)
-test = bigbiastab %>% filter(g == '0', gamma_ind =='X1')
-
-table(bigbiastab$g)
-
-#coverage'
-cov_tab = bigbiastab %>%
-  select(label, g, gamma_ind, oe_truecov_ht) %>% distinct()
-table(bigbiastab$gamma_ind)
-
-pdf("/gpfs/ysm/project/forastiere/sgd37/cai/figures/covtab_400clusters.png")  
-boxplot(cov_tab$oe_truecov_ht ~ cov_tab$g, xlab = 'gamma', ylab = 'oe coverage', main = 'oe ht true variance coverage with 200 clusters')
-abline(h = 0.95 , col = 'red')
-abline(h = 0.5 , col = 'pink')
-dev.off()
+bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', 
+                                   (true_oe == 0 | g !='0'))
 
 
 #comparing variances
 vartab = bigbiastab %>% 
-  dplyr::select(label, g, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
+  dplyr::select(label, g, gamma_ind, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
   pivot_longer(oe_analyticalvar_ht:oe_mcvar_ht) 
-ggplot(vartab, aes(x = g, y = value, colour = name)) + 
+ggplot(vartab %>% filter(gamma_ind == 'X2'), aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
   ggtitle('Comparison of MC, Bootstrapped, and Analytical Variance for OE, HT
-          \n beta4=0 -> trueoe=0 and n_i = 5 and no rnorm') #+ ylim(0, 1E-4) #for zoomed in version
+          \n beta4=0 -> trueoe=0 and n_i = 15 and no rnorm') #+ ylim(0, 1E-4) #for zoomed in version
 
 #comparing coverages
 covtab = bigbiastab %>% 
-  dplyr::select(label, g, oe_anacoverage_ht, oe_bootcoverage_ht) %>% 
+  dplyr::select(label, g, gamma_ind, oe_anacoverage_ht, oe_bootcoverage_ht) %>% 
   pivot_longer(oe_anacoverage_ht:oe_bootcoverage_ht) 
-ggplot(covtab, aes(x = g, y = value, colour = name)) + 
+ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of True, Bootstrapped, and MC Coverage for OE, HT
-          \n beta4=0 -> trueoe=0 and n_i = 5 and no rnorm') +
+  ggtitle('Comparison of True, Bootstrapped for OE, HT
+          \n beta4=0 -> trueoe=0 and n_i = 15 and no rnorm') +
   ylab('coverage') + 
   geom_hline(yintercept = 0.95)
-
 
 
 #potential outcomes
@@ -323,9 +303,9 @@ library(latex2exp)
 ggplot(fig2df %>% filter(gamma_ind == 'X1'),aes(x = g, y = value, colour = name)) + 
   theme_minimal() +
   geom_line() +   
-  theme(strip.text = element_text(size = 16),
-        text = element_text(size = 16),
-        axis.text = element_text(size = 16),
+  theme(strip.text = element_text(size = 12),
+        text = element_text(size = 12),
+        axis.text = element_text(size = 12),
         legend.title = element_blank(),
         legend.position = 'bottom')+
   geom_ribbon(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_ub), 
@@ -333,7 +313,7 @@ ggplot(fig2df %>% filter(gamma_ind == 'X1'),aes(x = g, y = value, colour = name)
   facet_grid(rows = vars(Conc), cols = vars(Interference)) + 
   xlab(TeX(r'(\gamma)'))+ 
   ylab('Overall Effect') + ylim(-.042,.042)
-#ggsave('x1intervention.png', width = 7, height = 5)
+ggsave('/gpfs/ysm/project/forastiere/sgd37/cai/x1intervention.png', width = 9, height = 6)
 #library(Cairo)
 #cairo_pdf(file = "~/project/cai/ggplot-greek.pdf", width = 8, height = 5)
 ## ggplot object created here
@@ -342,15 +322,16 @@ ggplot(fig2df %>% filter(gamma_ind == 'X1'),aes(x = g, y = value, colour = name)
 ggplot(fig2df %>% filter(gamma_ind == 'X2'),aes(x = g, y = value, colour = name)) + 
   theme_minimal() +
   geom_line() +   
-  theme(strip.text = element_text(size = 16),
-        text = element_text(size = 16),
-        axis.text = element_text(size = 16),
+  theme(strip.text = element_text(size = 12),
+        text = element_text(size = 12),
+        axis.text = element_text(size = 12),
         legend.title = element_blank(),
         legend.position = 'bottom')+
   geom_ribbon(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_ub), 
               alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
   facet_grid(rows = vars(Conc), cols = vars(Interference)) + 
   xlab('gamma') + ylab('Overall Effect') + ylim(-.042,.042)
+ggsave('/gpfs/ysm/project/forastiere/sgd37/cai/x2intervention.png', width = 9, height = 6)
 
 #1100 x 800
 

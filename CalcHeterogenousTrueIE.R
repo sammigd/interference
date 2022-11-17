@@ -9,7 +9,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols, interference = c('none', 'hom
   clust_avg = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer), 2))
   clust_avg_oe = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer)))
   
-  nn = 1000
+  nn = 1500
   for (sim in 1:nn){
     #sim = 1
     for (clus in unique(dta$neigh)){ #for each cluster

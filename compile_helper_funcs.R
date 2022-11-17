@@ -1,5 +1,5 @@
 #calc means over 600 simulations for each scenario
-get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
+get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion = F){
   #which_iter = 1
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
   
@@ -59,15 +59,24 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     oe_analyticalvar_ht[,i] = test$ht_oe['var',]
     oe_bootvar_ht[,i] = test$ht_oe['boot_var',]
     
-    
-    #true ie
-    true_ie0[,i] = test$het_ie_truth$ie[1,,ngam]
-    true_ie1[,i] = test$het_ie_truth$ie[2,,ngam]
+    if(diffusion == F){
+      true_ie0[,i] = test$het_ie_truth$ie[1,,ngam]
+      true_ie1[,i] = test$het_ie_truth$ie[2,,ngam]
+      true_de[,i] = 3
+      true_oe[,i] = test$het_ie_truth$oe[,ngam]
+      
+    }else{
+      true_ie0[,i] = test$truth$ie[1,,ngam]
+      true_ie1[,i] = test$truth$ie[2,,ngam]
+      true_de[,i] = test$truth$de
+      true_oe[,i] = test$truth$oe[,ngam]
+      true_y0[,i] = test$truth$y0[,ngam]
+      true_y1[,i] = test$truth$y1[,ngam]
+      
+    }
     
     if(beta4 == 0){
       true_oe[,i] = 0
-    }else{
-      true_oe[,i] = test$het_ie_truth$oe[,ngam]
     }
     
     oe_mcvar_ht[,i] = test$ht_oe_mcvar
@@ -78,6 +87,14 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     
     oe_bootcoverage_ht[,i] = (true_oe[,i] >= test$ht_oe['boot_var_LB',]) &  (true_oe[,i] <= test$ht_oe['boot_var_UB',]) 
     oe_bootcoverage_haj[,i] = (true_oe[,i] >= test$oe['boot_var_LB',]) & (true_oe[,i] <= test$oe['boot_var_UB',])
+    
+    #ie0 coverage
+    ie0_anacoverage_ht[,i] = (true_ie0[,i] >= test$ht_indirect0['LB',]) & (true_ie0[,i] <= test$ht_indirect0['UB',])
+    ie0_anacoverage_haj[,i] = (true_ie0[,i] >= test$indirect0['LB',]) &  (true_ie0[,i] <= test$indirect0['UB',])
+    
+    ie0_bootcoverage_ht[,i] = (true_ie0[,i] >= test$ht_indirect0['boot_var_LB',]) &  (true_ie0[,i] <= test$ht_indirect0['boot_var_UB',]) 
+    ie0_bootcoverage_haj[,i] = (true_ie0[,i] >= test$indirect0['boot_var_LB',]) & (true_ie0[,i] <= test$indirect0['boot_var_UB',])
+    
     
     #de coverage
     de_anacoverage_ht[,i] = (3 >= test$ht_direct['low_int',]) & (3 <= test$ht_direct['high_int',])
@@ -94,7 +111,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
     #ie_bootcoverage_haj[,i] = (true_oe[,i] > test$oe['boot_var_LB',]) & (true_oe[,i] < test$oe['boot_var_UB',])
   }
   
-  #now i have the vector for each sim. next - average over the sims
+  #now i have the vector for each sim. next - average over the sims 43
   estimates = list(direct_ht, direct_analyticalvar_ht, direct_bootvar_ht, #HERE!!!
                    direct_haj, direct_analyticalvar_haj, direct_bootvar_haj,
                    indirect0_ht, indirect0_analyticalvar_ht, indirect0_bootvar_ht,
@@ -103,9 +120,11 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
                    indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
                    oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
                    oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-                   true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
+                   true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
+                   y0_ht, y1_ht, y0_haj, y1_haj,
                    oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
                    de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
+                   ie0_anacoverage_ht, ie0_anacoverage_haj, ie0_bootcoverage_ht, ie0_bootcoverage_haj,
                    oe_mcvar_ht
   )
   
@@ -126,9 +145,11 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3]){
               indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
               oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
               oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-              true_ie0, true_ie1, true_oe, y0_ht, y1_ht, y0_haj, y1_haj,
+              true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
+              y0_ht, y1_ht, y0_haj, y1_haj,
               oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
               de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
+              ie0_anacoverage_ht, ie0_anacoverage_haj, ie0_bootcoverage_ht, ie0_bootcoverage_haj,
               oe_mcvar_ht))
 }
 

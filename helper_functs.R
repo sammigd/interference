@@ -17,7 +17,8 @@ AlphaToBi <- function(b, alpha, lin_pred) {
   return(r)
 }
 
-CalcNumerator <- function(Ai_j, Xi_j, gamma_numer, alpha, re_alpha) {
+CalcNumerator <- function(Ai_j, Xi_j, gamma_numer, alpha, re_alpha,
+                          include_alpha = TRUE) {
   
   gamma_numer <- matrix(gamma_numer, nrow = length(gamma_numer), ncol = 1)
   
@@ -25,10 +26,14 @@ CalcNumerator <- function(Ai_j, Xi_j, gamma_numer, alpha, re_alpha) {
   lin_pred <- lin_pred + re_alpha
   probs <- expit(lin_pred)
   
-  r <- (probs / alpha) ^ Ai_j * ((1 - probs) / (1 - alpha)) ^ (1 - Ai_j)
+  if (include_alpha) {
+    r <- (probs / alpha) ^ Ai_j * ((1 - probs) / (1 - alpha)) ^ (1 - Ai_j)
+  } else {
+    r <- probs ^ Ai_j * (1 - probs) ^ (1 - Ai_j)
+  }
+  
   return(list(prob = prod(r), re_alpha = re_alpha))
 }
-
 
 GetBootSample <- function(dta) {
   

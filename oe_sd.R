@@ -15,7 +15,7 @@
 #' 
 #' @export
 OE_sd <- function(ypop = NULL, ygroup, boots = NULL, 
-                  scores = NULL, alpha_level = 0.05, hajofygroup, horvitzthompson = F, true_ygroup) {
+                  scores = NULL, alpha_level = 0.05, hajofygroup, horvitzthompson = F) {
   
   gamma <- as.numeric(dimnames(ygroup)[[2]])
   ypop0 = ypop
@@ -27,8 +27,7 @@ OE_sd <- function(ypop = NULL, ygroup, boots = NULL,
     ie_var = IEvar(ygroup = ygroup, ps = 'true', scores = scores) # ypop$oe_ht_var
     ypop = apply(ypop$ypop, 2, mean)
   }
-  true_ie_var = IEvar(ygroup = true_ygroup, ps = 'true', scores = scores) # ypop$oe_ht_var
-  
+
   names(ypop) <- gamma
   quants <- c(0, 1) + c(1, - 1) * alpha_level / 2
   norm_quant <- - qnorm(alpha_level / 2)
@@ -66,5 +65,5 @@ OE_sd <- function(ypop = NULL, ygroup, boots = NULL,
     }
   }
   
-  return(list(oe = ie, oe_var = ie_var, true_oe_var = true_ie_var))
+  return(list(oe = ie, oe_var = ie_var))
 }

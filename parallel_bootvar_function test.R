@@ -42,7 +42,6 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
                        gamma_numer) {
   #B = 2
   ngam <- ifelse(is.null(ncol(gamma_numer)), 1, ncol(gamma_numer))
-  ngam = 100
   n_neigh <- max(dta$neigh)
   
   chosen_clusters <- array(NA, dim = c(n_neigh, B))
@@ -110,14 +109,14 @@ BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
     boot_oe_ht = OE_sd(ypop = ypop_boot_ht,
                        ygroup = ygroup_boot$oe_yhat_group,
                        hajofygroup = hh$oe_haj,
-                       horvitzthompson = T, true_ygroup =  ygroup_boot$oe_yhat_group) #here i dont have the true ygroup from the heterogeneous truth func so i just put in the estimated one to avoid bug. messy but shoudl fix..
+                       horvitzthompson = T) #here i dont have the true ygroup from the heterogeneous truth func so i just put in the estimated one to avoid bug. messy but shoudl fix..
     #print(dim( oe_est_ht[,bb]))
     #print(dim(boot_oe_ht$oe[,,ngam]))
     oe_est_ht[,bb] = boot_oe_ht$oe['est',,ngam]
     boot_oe_haj = OE_sd(ypop = ypop_boot_haj,
                         ygroup = ygroup_boot$oe_yhat_group,
                         hajofygroup = hh$oe_haj,
-                        horvitzthompson = F, true_ygroup =  ygroup_boot$oe_yhat_group)
+                        horvitzthompson = F)
     oe_est_haj[,bb] = boot_oe_haj$oe['est',,ngam]
     
     #betas:) 

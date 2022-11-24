@@ -62,16 +62,18 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
     if(diffusion == F){
       true_ie0[,i] = test$het_ie_truth$ie[1,,ngam]
       true_ie1[,i] = test$het_ie_truth$ie[2,,ngam]
-      true_de[,i] = 3
+      true_de[,i] = apply(test$het_ie_truth$true_y_ie[,,2] - test$het_ie_truth$true_y_ie[,,1], 2, mean)
       true_oe[,i] = test$het_ie_truth$oe[,ngam]
+      true_y0[,i] = apply(test$het_ie_truth$true_y_ie[,,1], 2, mean)
+      true_y1[,i] = apply(test$het_ie_truth$true_y_ie[,,2], 2, mean)
       
     }else{
       true_ie0[,i] = test$truth$ie[1,,ngam]
       true_ie1[,i] = test$truth$ie[2,,ngam]
       true_de[,i] = test$truth$de
       true_oe[,i] = test$truth$oe[,ngam]
-      true_y0[,i] = test$truth$y0[,ngam]
-      true_y1[,i] = test$truth$y1[,ngam]
+      true_y0[,i] = test$truth$y0
+      true_y1[,i] = test$truth$y1
       
     }
     

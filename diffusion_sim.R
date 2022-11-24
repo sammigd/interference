@@ -115,8 +115,7 @@ get_yhats_boot <- function(clust_size, use.boot = T){
   print('start het truth')
   truth = get_true_diffusion(gamma_numer = gamma_numer, 
                                     x2_prev = 0.2, 
-                                    kappa = 0.25, 
-                                    trt_vecs = trt_vecs)
+                                    kappa = 0.25)
   #het_ie_truth = NULL
   
   trt_col <- which(names(dta) == 'Trt')
@@ -168,7 +167,7 @@ get_yhats_boot <- function(clust_size, use.boot = T){
   
   print('oe')
   oe = OE_sd(ypop = ypop, ygroup = yhat_group_sd2$oe_yhat_group,  
-             hajofygroup = haj$oe_haj, boots = boots_est$oehajboots, true_ygroup = het_ie_truth$true_y_oe)
+             hajofygroup = haj$oe_haj, boots = boots_est$oehajboots)
   oe_cov = oe$oe_var
   oe = oe$oe[,,ngam]
   
@@ -186,8 +185,7 @@ get_yhats_boot <- function(clust_size, use.boot = T){
                         hajofygroup = haj$haj[2,], boots = boots_est$boots, horvitzthompson = T, treatment = 2)[,,ngam]
   
   ht_oe = OE_sd(ypop = ht_ypop, ygroup = yhat_group_sd2$oe_yhat_group, 
-                hajofygroup = haj$oe_haj, boots = boots_est$oehtboots, horvitzthompson = T, true_ygroup = het_ie_truth$true_y_oe)
-  ht_oe_cov = ht_oe$oe_var
+                hajofygroup = haj$oe_haj, boots = boots_est$oehtboots, horvitzthompson = T)
   ht_oe_truevar = ht_oe$true_oe_var
   ht_oe = ht_oe$oe[,,ngam]
   
@@ -205,7 +203,7 @@ get_yhats_boot <- function(clust_size, use.boot = T){
                 indirect1 = indirect1,
                 ht_indirect0=ht_indirect0,
                 ht_indirect1=ht_indirect1,
-                ht_oe=ht_oe, ht_oe_cov = ht_oe_cov,
+                ht_oe=ht_oe, #ht_oe_cov = ht_oe_cov,
                 het_ie_truth = truth,
                 oe = oe, oe_cov = oe_cov, ht_oe_truevar = ht_oe_truevar,
                 ht_oe_mcvar = ht_oe_mcvar,

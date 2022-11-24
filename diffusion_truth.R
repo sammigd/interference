@@ -8,7 +8,8 @@ get_true_diffusion <- function(gamma_numer,
                                kappa = 0.25,
                                trt_vecs = t(expand.grid(0:1, 0:1, 0:1, 0:1, 0:1)),
                                clust_size = 5,
-                               p_diffusion = 0.5){
+                               p_diffusion = 0.5,
+                               p_trt = 0.25){
   #setup results tables
   res_mat = array(NA, dim = c(ncol(trt_vecs), ncol(trt_vecs), ncol(gamma_numer)))
   dimnames(res_mat) <- list(trt_vecs = 1:ncol(trt_vecs), x_vec = 1:ncol(trt_vecs), gammas = 1:ncol(gamma_numer))
@@ -80,7 +81,7 @@ get_true_diffusion <- function(gamma_numer,
     }
   }
   
-  p_a_x1 = apply(res_mat, c(1,3), sum) #P(A | X1) #some of these are greater than 1
+  p_a_x1 = apply(res_mat, c(1,3), sum) #P(A | X1) 
   
   wtd_y_components = p_a_x1 * as.vector(Y_mat[,1])
   wtd_y = apply(wtd_y_components, 2, sum)

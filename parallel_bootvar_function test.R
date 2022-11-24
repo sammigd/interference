@@ -35,7 +35,7 @@
 #' effect variance of the cluster specific intercept.
 #' 
 #' @export
-BootVar_sd <- function(dta, B = 500, alpha, ps = c('true', 'est'), cov_cols,
+BootVar_sd <- function(dta, B = 150, alpha, ps = c('true', 'est'), cov_cols,
                        phi_hat_true = NULL, ps_info_est = NULL, verbose = TRUE,
                        ps_specs = NULL, trt_col = NULL, out_col = NULL,
                        return_everything = FALSE,

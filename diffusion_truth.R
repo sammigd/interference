@@ -42,6 +42,8 @@ get_true_diffusion <- function(gamma_numer,
     
     Y_mat[a,] = c(Y_bar, Y_bar0, Y_bar1)
     
+    
+    
     for (x in 1:ncol(trt_vecs)){
       #xx = 1
       xx = trt_vecs[,x]
@@ -67,7 +69,7 @@ get_true_diffusion <- function(gamma_numer,
         re_alpha <- FromAlphaToRE(alpha = p_trt, lin_pred = lin_pred,
                                   alpha_re_bound = 15)
         
-        p_a_x = CalcNumerator(Ai_j = aa, #problem: these shoudl be probabilities, but some are greater than 1???
+        p_a_x = CalcNumerator(Ai_j = aa, 
                               Xi_j = cbind(x1, xx),
                               gamma_numer = curr_gamma,
                               alpha = p_trt, 
@@ -75,8 +77,7 @@ get_true_diffusion <- function(gamma_numer,
                               include_alpha = FALSE)$prob
         res_mat[a,x,g] = p_a_x * p_x2_x1 #this is P(Aij | X2)
         
-        #need outcome model to weight by this probability?
-        
+
       }
     }
   }

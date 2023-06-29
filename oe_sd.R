@@ -51,7 +51,7 @@ OE_sd <- function(ypop = NULL, ygroup, boots = NULL,
       ie[c(3, 4), a1, a2] <- ie[1, a1, a2] + norm_quant * c(- 1, 1) * ie_sd
     }
   }
-  
+  ie_var_boots = NULL
   if (!is.null(boots)) {
     ie_var_boots <- array(NA, dim = c(length(gamma), length(gamma)))
     for (a1 in 1 : length(gamma)) {
@@ -65,5 +65,5 @@ OE_sd <- function(ypop = NULL, ygroup, boots = NULL,
     }
   }
   
-  return(list(oe = ie, oe_var = ie_var))
+  return(list(oe = ie, oe_var = ie_var, oe_var_boots = ie_var_boots))
 }

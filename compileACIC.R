@@ -2,7 +2,9 @@
 library(tidyverse)
 setwd("/gpfs/ysm/project/forastiere/sgd37/cai")
 source('scripts/compile_helper_funcs.R')
-fig_loc = "~/project/cai/figures/nov23meeting"
+fig_loc = "~/project/cai/figures/meet2023apr27"
+
+library(latex2exp)
 
 
 #load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
@@ -23,8 +25,15 @@ gamma_list = cbind(gamma_list, c(0,0,0,0))
 beta_0 = .1
 beta_1 = 3
 #read in all of the simulations
-setwd("~/project/cai/florence_varfix_big")
+#setwd("~/project/cai/florence_tfix5")
 #setwd("~/project/cai/florence_tcheck")
+
+#setwd("~/project/cai/powercalcs")
+#setwd("~/project/cai/florence_g3_3")
+#powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
+
+setwd("~/project/cai/multidim_gamma_march5")
+
 
 alliters = list.files()
 
@@ -55,10 +64,12 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'oe_haj', 'oe_analyticalvar_haj', 'oe_bootvar_haj',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
             'true_ie0', 'true_ie1', 'true_oe', 'true_de', 'true_y0', 'true_y1',
-            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj',
+            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj', 'y0_ht_var', 'y1_ht_var', 'y0_ht_bootvar', 'y1_ht_bootvar', 'y0_ht_mcvar', 'y1_ht_mcvar', 
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
-            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj', 'oe_mcvar_ht',
-            'ie0_anacoverage_ht', 'ie0_anacoverage_haj', 'ie0_bootcoverage_ht', 'ie0_bootcoverage_haj'
+            'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj',
+            'ie0_anacoverage_ht', 'ie0_anacoverage_haj', 'ie0_bootcoverage_ht', 'ie0_bootcoverage_haj',
+            'ie1_anacoverage_ht', 'ie1_anacoverage_haj', 'ie1_bootcoverage_ht', 'ie1_bootcoverage_haj',
+            'y0_anacoverage_ht', 'y1_anacoverage_ht', 'y_ht_covar', 'y0_bootcoverage_ht', 'y1_bootcoverage_ht', 'sum_wts0', 'sum_wts1'
 )
 
 
@@ -107,118 +118,298 @@ for (parms in 1:length(parmlist)){
   ugly_parm = str_split(parmlist[parms], '_')
   pretty_parm = paste0('beta3 = ', ugly_parm[[1]][2], ', \nbeta4 = ', ugly_parm[[1]][3], ', \nconcor(X1,X2) = ', str_sub(ugly_parm[[1]][4], start = 1, end =-7 ))
   concordance =   str_sub(ugly_parm[[1]][4], start = 1, end =-7 )
+  b3 = ugly_parm[[1]][2]
+  b4 = ugly_parm[[1]][3]
+  if(!(b4 %in% c(0,1))){next}
+  #if(!(concordance %in% 0)){next}
   estimates = get_means(parms, e.names)
   for (i in 1:length(e.names)){
+    #print('newparms')
     assign(e.names[i], estimates[[i]])
   }
   biastab = data.frame(#g = gamma_list[2,]) %>% #
       g = c(rep(gamma_list[2,1:floor(ngam/3)], 3), 0),
-      gamma_ind = c(rep('X1', 33), rep('X2', 33), rep('X3', 33), 'X1')) %>% 
-    mutate(true_oe = true_oe, true_ie1 = true_ie1, true_ie0 = true_ie0, 
+      g1 = gamma_list[2,],
+      g2 = gamma_list[3,],
+      gamma_ind = c(rep('X1', floor(ngam/3)), rep('X2', floor(ngam/3)), rep('X3', floor(ngam/3)), 'X1')) %>% 
+    mutate(#True parameter values
+           true_oe = true_oe, true_ie1 = true_ie1, true_ie0 = true_ie0, 
            true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
+           #estimated parameter values
            de_ht = direct_ht, de_haj = direct_haj,
            ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
            oe_ht = oe_ht, oe_haj = oe_haj,
+           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
+           y0_ht_var = y0_ht_var, y1_ht_var = y1_ht_var,y_ht_covar = y_ht_covar,
+           y0_ht_bootvar = y0_ht_bootvar, y1_ht_bootvar = y1_ht_bootvar,
+           y0_ht_mcvar = y0_ht_mcvar, y1_ht_mcvar = y1_ht_mcvar, 
+           #bias
            bias_de_ht = (direct_ht - beta_1), bias_de_haj = (direct_haj - beta_1),
            bias_oe_ht = (oe_ht - true_oe), bias_oe_haj = (oe_haj - true_oe),
            bias_ie0_ht = (indirect0_ht - true_ie0),  bias_ie1_ht = (indirect1_ht - true_ie1),
            bias_ie0_haj = (indirect0_haj - true_ie0), bias_ie1_haj = (indirect1_haj - true_ie1),
-           label = pretty_parm, concordance = concordance,
-           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
+           bias_y0_ht = y0_ht - true_y0,
+           bias_y1_ht = y1_ht - true_y1,
+           bias_y0_haj = y0_haj - true_y0,
+           bias_y1_haj = y1_haj - true_y1,
+           #labels
+           label = pretty_parm, concordance = concordance, b3 = b3, b4 = b4,
+           #coverage
            oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
            oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
            de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
            de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
-           oe_bootvar_ht = oe_bootvar_ht, oe_analyticalvar_ht = oe_analyticalvar_ht,
-           oe_mcvar_ht = oe_mcvar_ht,
-           ie0_anacoverage_ht = ie0_anacoverage_ht,
-           ie0_anacoverage_haj = ie0_anacoverage_haj,
-           ie0_bootcoverage_ht = ie0_bootcoverage_ht,
-           ie0_bootcoverage_haj = ie0_bootcoverage_haj
+           ie0_anacoverage_ht = ie0_anacoverage_ht, ie0_anacoverage_haj = ie0_anacoverage_haj,
+           ie0_bootcoverage_ht = ie0_bootcoverage_ht, ie0_bootcoverage_haj = ie0_bootcoverage_haj,
+           ie1_anacoverage_ht = ie1_anacoverage_ht, ie1_anacoverage_haj = ie1_anacoverage_haj,
+           ie1_bootcoverage_ht = ie1_bootcoverage_ht, ie1_bootcoverage_haj = ie1_bootcoverage_haj,
+           y0_anacoverage_ht = y0_anacoverage_ht, y1_anacoverage_ht = y1_anacoverage_ht,
+           y0_bootcoverage_ht = y0_bootcoverage_ht, y1_bootcoverage_ht = y1_bootcoverage_ht,
+           #variances
+           #OE HT
+           oe_bootvar_ht = oe_bootvar_ht, 
+           oe_analyticalvar_ht = oe_analyticalvar_ht,
+           #OE HAJ
+           oe_bootvar_haj = oe_bootvar_haj, 
+           oe_analyticalvar_haj = oe_analyticalvar_haj,
+           #DE HT
+           de_analyticalvar_ht = direct_analyticalvar_ht, 
+           de_bootvar_ht = direct_bootvar_ht,
+           #DE HAJ
+           de_analyticalvar_haj = direct_analyticalvar_haj,
+           de_bootvar_haj = direct_bootvar_haj,
+           #IE1 HT
+           ie1_analyticalvar_ht = indirect1_analyticalvar_ht, 
+           ie1_bootvar_ht = indirect1_bootvar_ht, 
+           #IE1 HAJ
+           ie1_analyticalvar_haj = indirect1_analyticalvar_haj, 
+           ie1_bootvar_haj = indirect1_bootvar_haj,
+           #IE0 HT
+           ie0_analyticalvar_ht = indirect0_analyticalvar_ht, 
+           ie0_bootvar_ht = indirect0_bootvar_ht, 
+           #IE0 HAJ
+           ie0_analyticalvar_haj = indirect0_analyticalvar_haj, 
+           ie0_bootvar_haj = indirect0_bootvar_haj,
+           #sum wts
+           sum_wts0 = sum_wts0, sum_wts1 = sum_wts1
            )
   bigbiastab = rbind(bigbiastab, biastab)
 } 
 
-#bias investigation
-bias_tab = bigbiastab %>% filter(gamma_ind == "X1") 
-ggplot(bias_tab, aes(x = g, y = bias_oe_ht)) + 
-  geom_point(alpha = .4) + 
-  facet_wrap(~label) + 
-  geom_hline(yintercept = 0) + 
-  xlab('gamma') + 
-  ylab('oe bias (haj)') + 
-  ggtitle('Bias In Hajek Overall Effect')
-
-boxplot(bias_tab$bias_oe_ht ~ bias_tab$g)
-abline(h=0, col = 'red')
-boxplot(bigbiastab$bias_oe_haj ~ bigbiastab$g)
-abline(h=0, col = 'red')
-
-og = bigbiastab #flo 400
+og = bigbiastab
 #bigbiastab = og
 
 #pick a for analytical variance, b for bootstrapped variance
-bigbiastab = pick_var('b', bigbiastab)
+#bigbiastab = pick_var('b', bigbiastab)
 bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', 
                                    (true_oe == 0 | g !='0'))
 
+#######################################################
+# FOR BIVARIATE INTERVENTION
+#######################################################
+bigbiastab$g
+table(bigbiastab$gamma_ind)
 
-#comparing variances
+ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = oe_anacoverage_haj)) + 
+  geom_tile() + 
+  facet_wrap(~label, nrow = 2) + ggtitle('oe coverage for bivariate intervention')
+
+ggplot(data = bigbiastab, aes(x = g1, y = oe_anacoverage_haj, col = g2)) + 
+  geom_point() + 
+  facet_wrap(~label) + ggtitle('oe coverage for bivariate intervention')
+
+ggplot(data = bigbiastab, aes(x = g1, y = oe_bootcoverage_haj, col = g2)) + 
+  geom_point() + 
+  facet_wrap(~label) + ggtitle('oe coverage for bivariate intervention')
+
+
+ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = sum_wts0)) + 
+  geom_tile() + 
+  facet_wrap(~label)
+
+ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = oe_haj)) + 
+  geom_tile() + 
+  facet_wrap(~label, nrow = 2)
+
+
+#######################################################
+# CHECKING VARIANCES
+#######################################################
+#OE
 vartab = bigbiastab %>% 
-  dplyr::select(label, g, gamma_ind, oe_analyticalvar_ht, oe_bootvar_ht, oe_mcvar_ht) %>% 
-  pivot_longer(oe_analyticalvar_ht:oe_mcvar_ht) 
-ggplot(vartab %>% filter(gamma_ind == 'X2'), aes(x = g, y = value, colour = name)) + 
+  dplyr::select(label, g, gamma_ind, oe_analyticalvar_ht, oe_bootvar_ht, oe_analyticalvar_haj, oe_bootvar_haj) %>% 
+  pivot_longer(oe_analyticalvar_ht:oe_bootvar_haj) 
+ggplot(vartab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of MC, Bootstrapped, and Analytical Variance for OE, HT
-          \n beta4=0 -> trueoe=0 and n_i = 15 and no rnorm') #+ ylim(0, 1E-4) #for zoomed in version
+  ggtitle('Comparison of Variances for OE') #+ ylim(0, 1E-5) #for zoomed in version
+ggsave(paste0(fig_loc, '/mod_oe_vars.png'), width = 9, height = 9)
 
-#comparing coverages
+
+#DE
+vartab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, de_analyticalvar_ht, de_analyticalvar_haj, de_bootvar_ht, de_bootvar_haj) %>% 
+  pivot_longer(de_analyticalvar_ht:de_bootvar_haj) 
+ggplot(vartab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of Variances for DE') #+ ylim(0, 1E-4) #for zoomed in version
+ggsave(paste0(fig_loc, '/mod_de_vars.png'), width = 9, height = 9)
+
+
+#ie
+vartab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, ie1_analyticalvar_ht, ie1_analyticalvar_haj, ie1_bootvar_ht, ie1_bootvar_haj) %>% 
+  pivot_longer(ie1_analyticalvar_ht:ie1_bootvar_haj) 
+ggplot(vartab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of Variances for IE')
+ggsave(paste0(fig_loc, '/mod_ie1_vars.png'), width = 9, height = 9)
+
+vartab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, ie0_analyticalvar_ht, ie0_analyticalvar_haj, ie0_bootvar_ht, ie0_bootvar_haj) %>% 
+  pivot_longer(ie0_analyticalvar_ht:ie0_bootvar_haj) 
+ggplot(vartab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of Variances for IE')
+ggsave(paste0(fig_loc, '/mod_ie0_vars.png'), width = 9, height = 9)
+
+
+
+
+#yhats
+vartab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, y0_ht_var, y1_ht_var, y0_ht_bootvar, y1_ht_bootvar, y0_ht_mcvar, y1_ht_mcvar) %>% 
+  pivot_longer(y0_ht_var:y1_ht_mcvar) 
+ggplot(vartab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Comparison of Variances for yhats')
+ggsave(paste0(fig_loc, '/mod_yhat_ht_vars.png'), width = 9, height = 9)
+
+
+#######################################################
+# CHECKING COVERAGE
+#######################################################
 covtab = bigbiastab %>% 
-  dplyr::select(label, g, gamma_ind, oe_anacoverage_ht, oe_bootcoverage_ht) %>% 
-  pivot_longer(oe_anacoverage_ht:oe_bootcoverage_ht) 
+  dplyr::select(label, g, gamma_ind, oe_anacoverage_ht, oe_anacoverage_haj, 
+                oe_bootcoverage_ht, oe_bootcoverage_haj) %>% 
+  pivot_longer(oe_anacoverage_ht:oe_bootcoverage_haj) 
 ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of True, Bootstrapped for OE, HT
-          \n beta4=0 -> trueoe=0 and n_i = 15 and no rnorm') +
+  ggtitle('Variance Coverage OE') +
   ylab('coverage') + 
   geom_hline(yintercept = 0.95)
+ggsave(paste0(fig_loc, '/mod_oe_cov1.png'), width = 9, height = 9)
+
+
+ttt = bigbiastab %>% select(b3, b4, concordance, gamma_ind, g, true_ie1, ie1_ht, ie1_bootvar_ht)
+
+ht_cov_tab = bigbiastab %>% 
+  #filter(gamma_ind == 'X1') %>%
+  dplyr::select(b3, b4, concordance, gamma_ind, g, 
+                de_anacoverage_ht, ie0_anacoverage_ht, ie1_anacoverage_ht, oe_anacoverage_ht,
+                de_anacoverage_haj, ie0_anacoverage_haj, ie1_anacoverage_haj, oe_anacoverage_haj) %>% 
+  group_by(b3, b4, concordance, gamma_ind) %>% 
+  summarise(DE_HT = round(mean(de_anacoverage_ht),2),
+            IE0_HT = round(mean(ie0_anacoverage_ht),2),
+            IE1_HT = round(mean(ie1_anacoverage_ht),2),
+            OE_HT = round(mean(oe_anacoverage_ht),2),
+            DE_HAJ = round(mean(de_anacoverage_haj),2),
+            IE0_HAJ = round(mean(ie0_anacoverage_haj),2),
+            IE1_HAJ = round(mean(ie1_anacoverage_haj),2),
+            OE_HAJ = round(mean(oe_anacoverage_haj),2)) %>%
+  mutate(DE = paste0(DE_HT, '  (', DE_HAJ, ')'),
+         `IE(0)` =  paste0(IE0_HT, '  (', IE0_HAJ, ')'),
+         `IE(1)` =  paste0(IE1_HT, '  (', IE1_HAJ,')'),
+         OE = paste0(OE_HT, '  (', OE_HAJ, ')')) %>%
+  dplyr::select(b3, b4, concordance, gamma_ind, DE, `IE(0)`, `IE(1)`, OE)
+names(ht_cov_tab) =c('$beta3$', '$beta4$', 'Concordance(X1,X2)','Targeted Covariate', 'DE', 'IE(0)', 'IE(1)', 'OE')
+#ht_cov_tab[,2:5] = round(ht_cov_tab[,2:5], 2)
+#ht_cov_tab$Scenario = str_replace_all(ht_cov_tab$Scenario, 'beta3', '$beta_3$')
+#ht_cov_tab$Scenario = str_replace_all(ht_cov_tab$Scenario, 'beta4', '$beta_4$')
+
+
+library(xtable)
+print(xtable(ht_cov_tab, type = "latex"), file = paste0(fig_loc, '/tabletest.tex'), sanitize.text.function = function(x){x}, include.rownames = F)
+
+
 
 #IE0 coverage
 covtab = bigbiastab %>% 
-  dplyr::select(label, g, gamma_ind, ie0_anacoverage_ht, ie0_bootcoverage_ht) %>% 
-  pivot_longer(ie0_anacoverage_ht:ie0_bootcoverage_ht) 
+  dplyr::select(label, g, gamma_ind, ie0_bootcoverage_ht, ie0_bootcoverage_haj, ie0_anacoverage_ht, ie0_anacoverage_haj) %>% 
+  pivot_longer(ie0_bootcoverage_ht:ie0_anacoverage_haj) 
 ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
   geom_point(alpha = 0.5) + 
   facet_wrap(~label) + 
-  ggtitle('Comparison of True, Bootstrapped for IE0, HT') +
+  ggtitle('Bootstrap Variance Coverage IE0') +
   ylab('coverage') + 
   geom_hline(yintercept = 0.95)
-ggsave(paste0(fig_loc, '/mod_ie0_cov.png'), width = 9, height = 9)
+ggsave(paste0(fig_loc, '/mod_ie0_cov1.png'), width = 9, height = 9)
+
+#ie1
+covtab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, ie1_anacoverage_ht, ie1_anacoverage_haj, ie1_bootcoverage_ht, ie1_bootcoverage_haj) %>% 
+  pivot_longer(ie1_anacoverage_ht:ie1_bootcoverage_haj) 
+ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5)+ 
+  facet_wrap(~label) + 
+  ggtitle('Bootstrap Variance Coverage IE1') +
+  ylab('coverage') + 
+  geom_hline(yintercept = 0.95)
+ggsave(paste0(fig_loc, '/mod_ie1_cov1.png'), width = 9, height = 9)
 
 
+#DE COV
+covtab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj) %>% 
+  pivot_longer(de_anacoverage_ht:de_bootcoverage_haj) 
+ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Variance Coverage DE') +
+  ylab('coverage') + 
+  geom_hline(yintercept = 0.95)
+ggsave(paste0(fig_loc, '/mod_de_cov2.png'), width = 9, height = 9)
+
+#yhat coverage
+covtab = bigbiastab %>% 
+  dplyr::select(label, g, gamma_ind, y0_anacoverage_ht, y1_anacoverage_ht) %>% 
+  pivot_longer(y0_anacoverage_ht:y1_anacoverage_ht) 
+ggplot(covtab %>% filter(gamma_ind == 'X1'), aes(x = g, y = value, colour = name)) + 
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~label) + 
+  ggtitle('Variance Coverage Yhat') +
+  ylab('coverage') + 
+  geom_hline(yintercept = 0.95)
+ggsave(paste0(fig_loc, '/mod_yhat_cov.png'), width = 9, height = 9)
 
 
-#potential outcomes
+#############################################
+# POTENTIAL OUTCOMES
+#############################################
 y_bias_tab = bigbiastab %>%
   pivot_longer(cols = y1_ht:y0_haj, names_to = 'which_po', values_to = 'yhat')
-ggplot(y_bias_tab %>% filter(gamma_ind == 'X1', concordance==0), aes(x =g, y = yhat, colour = which_po)) + 
+ggplot(y_bias_tab %>% filter(gamma_ind == 'X1', concordance==0), aes(x =g, y = yhat, colour = which_po, shape = which_po)) + 
   geom_point() + 
   geom_line(aes(y = true_y0), colour = 'black') +
   geom_line(aes(y = true_y1), colour = 'black') + 
+  facet_wrap(~label) #+ ylim(c(3,3.2))
+ggsave(paste0(fig_loc, '/mod_yhats_est.png'), width = 7, height = 6)
+
+
+y_bias_tab = bigbiastab %>%
+  pivot_longer(cols = bias_y0_ht:bias_y1_haj, names_to = 'which_est', values_to = "bias") %>%
+  filter(gamma_ind == 'X1', concordance==0)
+ggplot(y_bias_tab,aes(x =g, y = bias, colour = which_est, shape = which_est)) + 
+  geom_point() + 
   facet_wrap(~label)
-ggsave(paste0(fig_loc, '/mod_yhats.png'), width = 7, height = 6)
+ggsave(paste0(fig_loc, '/mod_yhats_bias.png'), width = 7, height = 6)
 
 
-ggplot(y_bias_tab, aes(x = g, y = yhat, colour = which_po)) + 
-  geom_point(alpha = 0.4) + 
-  facet_wrap(~label) + 
-  geom_line(aes(y = true_y0), colour = 'black') +
-  geom_line(aes(y = true_y1), colour = 'black') +
-  geom_line(aes(y = true_de), colour = 'purple') + 
-  geom_line(aes(y = de_ht), colour = 'brown') + 
-  ylim(2.9, 3.1)
 
 
 de_tab = bigbiastab %>%
@@ -226,79 +417,18 @@ de_tab = bigbiastab %>%
   
 ggplot(de_tab %>% filter(gamma_ind == 'X1', concordance==0), 
        aes(x =g, y = de, fill = which_de, colour = which_de)) +   
-  geom_point() +
+  geom_line() +
   #geom_line(aes(y = true_y0), colour = 'black') +
   #geom_line(aes(y = true_y1), colour = 'black') + 
-  geom_point() + 
-  facet_wrap(~label) + 
-  geom_ribbon(aes(x = g, ymin = de_ht_ana_lb, ymax = de_ht_ana_ub), alpha=0.2, fill = '#7CAE00', colour = NA) + 
+  facet_wrap(~label + gamma_ind) + 
+  #geom_ribbon(aes(x = g, ymin = de_ht_ana_lb, ymax = de_ht_ana_ub), alpha=0.2, fill = '#7CAE00', colour = NA) + 
   geom_ribbon(aes(x = g, ymin = de_haj_ana_lb, ymax = de_haj_ana_ub), alpha=0.2, fill = '#F8766D', colour = NA)
 ggsave(paste0(fig_loc, '/mod_de.png'), width = 7, height = 6)
 
-  
-plot(bigbiastab$y1_ht - bigbiastab$y0_ht, bigbiastab$de_ht)
-plot(bigbiastab$true_y1 - bigbiastab$true_y0, bigbiastab$y1_ht - bigbiastab$y0_ht)
-plot(bigbiastab$de_ht ,bigbiastab$true_de)
 
-
-
-
-
-#direct effect bias
-de_bias_tab = bigbiastab %>%
-  pivot_longer(cols = de_ht:de_haj, names_to = 'which_de_est', values_to = 'de_est') %>%
-  pivot_longer(cols = c(de_ht_ana_lb, de_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
-  pivot_longer(cols = c(de_ht_ana_ub, de_haj_ana_ub), names_to = "which_ub", values_to = 'ub') %>%
-  filter(which_de_est == 'de_haj' & which_lb == 'de_haj_ana_lb' |
-           which_de_est == 'de_ht' & which_lb == 'de_ht_ana_lb',
-         which_de_est == 'de_haj' & which_ub == 'de_haj_ana_ub' |
-           which_de_est == 'de_ht' & which_ub == 'de_ht_ana_ub')
-
-ggplot(de_bias_tab %>% filter(gamma_ind == 'X1'), aes(x = g, y = bias_de_ht, fill = which_de_est)) + 
-  geom_line(aes(colour = which_de_est)) + 
-  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), alpha=0.25) + 
-  facet_wrap(~label, ncol = length(parmlist)) + 
-  geom_hline(yintercept = 0, colour = 'black', linetype = 'dashed') + 
-  theme(strip.text = element_text(size = 4)) +
-  labs(title = 'Direct Effect Bias - HT and Haj')
-
-#indirect effect bias
-ie0_bias_tab = bigbiastab %>%
-  pivot_longer(cols = ie0_ht:ie0_haj, names_to = 'which_ie0_est', values_to = 'ie0_est') %>%
-  pivot_longer(cols = c(ie0_ht_ana_lb, ie0_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
-  pivot_longer(cols = c(ie0_ht_ana_ub, ie0_haj_ana_ub), names_to = "which_ub", values_to = 'ub') %>%
-  filter(which_ie0_est == 'ie0_haj' & which_lb == 'ie0_haj_ana_lb' |
-           which_ie0_est == 'ie0_ht' & which_lb == 'ie0_ht_ana_lb',
-         which_ie0_est == 'ie0_haj' & which_ub == 'ie0_haj_ana_ub' |
-           which_ie0_est == 'ie0_ht' & which_ub == 'ie0_ht_ana_ub')
-
-ggplot(ie0_bias_tab, aes(x = g, y = bias_ie0_ht, fill = which_ie0_est)) + 
-  geom_point(aes(colour = which_ie0_est)) + 
-  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), alpha=0.25) + 
-  facet_wrap(~label, ncol = length(parmlist)/2) + 
-  geom_hline(yintercept = 0, colour = 'black', linetype = 'dashed') + 
-  theme(strip.text = element_text(size = 7)) + 
-  labs(title = 'Indirect Effect (Trt = 0) Bias - HT and Haj')
-
-ie1_bias_tab = bigbiastab %>%
-  pivot_longer(cols = ie1_ht:ie1_haj, names_to = 'which_ie1_est', values_to = 'ie1_est') %>%
-  pivot_longer(cols = c(ie1_ht_ana_lb, ie1_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
-  pivot_longer(cols = c(ie1_ht_ana_ub, ie1_haj_ana_ub), names_to = "which_ub", values_to = 'ub') %>%
-  filter(which_ie1_est == 'ie1_haj' & which_lb == 'ie1_haj_ana_lb' |
-           which_ie1_est == 'ie1_ht' & which_lb == 'ie1_ht_ana_lb',
-         which_ie1_est == 'ie1_haj' & which_ub == 'ie1_haj_ana_ub' |
-           which_ie1_est == 'ie1_ht' & which_ub == 'ie1_ht_ana_ub')
-
-ggplot(ie1_bias_tab, aes(x = g, y = bias_ie1_ht, fill = which_ie1_est)) + 
-  geom_line(aes(colour = which_ie1_est)) + 
-  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), alpha=0.25) + 
-  facet_wrap(~label, ncol = length(parmlist)) + 
-  geom_hline(yintercept = 0, colour = 'black', linetype = 'dashed') + 
-  theme(strip.text = element_text(size = 7)) + 
-  labs(title = 'Indirect Effect (Trt = 1) Bias - HT and Haj')
-
-
-#OVERALL EFFECT
+########################################################################
+# FOR POWER CALCS
+########################################################################
 oe_bias_tab = bigbiastab %>%
   pivot_longer(cols = oe_ht:oe_haj, names_to = 'which_oe_est', values_to = 'oe_est') %>%
   pivot_longer(cols = c(oe_ht_ana_lb, oe_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
@@ -308,106 +438,56 @@ oe_bias_tab = bigbiastab %>%
          which_oe_est == 'oe_haj' & which_ub == 'oe_haj_ana_ub' |
            which_oe_est == 'oe_ht' & which_ub == 'oe_ht_ana_ub')
 
-ggplot(oe_bias_tab %>% filter(gamma_ind == 'X1'), aes(x = g, y = bias_oe_ht, fill = which_oe_est)) + 
-  geom_line(aes(colour = which_oe_est)) + 
-  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), alpha=0.25) + 
-  facet_wrap(~label+gamma_ind, ncol = length(parmlist)/2) + 
-  geom_hline(yintercept = 0, colour = 'black', linetype = 'dashed') + 
-  theme(strip.text = element_text(size = 5))+
-  labs(title = 'Overall Effect Bias - HT and Haj')
-
 #get oe true for power calcs
 testing = oe_bias_tab %>% group_by(label, g) %>% summarise(true_oe = mean(true_oe))
 testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe)))
 
-#Does the "truth" make sense
-ggplot(bigbiastab %>% pivot_longer(true_oe:true_de),aes(x = g, y = value)) + 
-  geom_line() +   
-  theme(strip.text = element_text(size = 7, margin=margin(c(0,0,0,0))))+
-  facet_wrap(~name+label, ncol = 18)
 
-#Do the estimates make sense
-ggplot(bigbiastab %>% pivot_longer(c(ie0_haj, ie1_haj)) %>%filter(gamma_ind == 'X1') ,aes(x = g, y = value)) + 
-  geom_line() +   
-  theme(strip.text = element_text(size = 7, margin=margin(c(0,0,0,0))))+
-  facet_wrap(~name+label, ncol = 9)+
-  ylim(-.1, .1)
+##########################################################
+# EFFECT PLOTS FOR MS 
+##########################################################
 
-library(ggtext)
-
-#wht does confidence interval look the same for every scenario?
-
-
-
-#oe comp
-fig2df = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)) %>%
-  #filter(gamma_ind == 'X1') %>%
-  filter(str_detect(label, 'beta3 = 0'), concordance != "0.65") %>%
-  mutate(Interference = case_when(str_detect(label, 'beta4 = 0,') ~ 'No Interference',
-                                  str_detect(label, 'beta4 = 0.5') ~ 'Moderate Interference',
-                                  str_detect(label, 'beta4 = 1') ~ 'Strong Interference')) %>%
-  filter(!is.na(Interference)) %>%
-  mutate(Conc = case_when(concordance == '0' ~ 'X1,X2 Uncorrelated',
-                          concordance == '0.8' ~ 'X1,X2 Highly Correlated')) %>%
-  mutate(Interference = factor(Interference, levels = c('No Interference',
-                                                        'Moderate Interference',
-                                                        'Strong Interference'))) %>%
-  mutate(Conc = factor(Conc, levels = c('X1,X2 Uncorrelated', 'X1,X2 Highly Correlated')),
-         name = ifelse(name == 'oe_haj', 'Hajek OE', 'True OE'),
-         name = factor(name, levels = c( 'True OE','Hajek OE')))
-
-#install.packages('latex2exp')
-library(latex2exp)
-
-ggplot(fig2df %>% 
-         filter(gamma_ind == 'X1',
-                Conc == 'X1,X2 Uncorrelated'),
-       aes(x = g, y = value, colour = name)) + 
-  theme_minimal() +
-  geom_line() +   
-  theme(strip.text = element_text(size = 12),
-        text = element_text(size = 12),
-        axis.text = element_text(size = 12),
-        legend.title = element_blank(),
-        legend.position = 'bottom')+
-  geom_ribbon(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_ub), 
-              alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
-  facet_grid(rows = vars(Conc), cols = vars(Interference)) + 
-  xlab(TeX(r'(\gamma)'))+ 
-  ylab('Overall Effect') + ylim(-.042,.042)
-ggsave('/gpfs/ysm/project/forastiere/sgd37/cai/figures/x1intervention.png', width = 9, height = 6)
-#library(Cairo)
-#cairo_pdf(file = "~/project/cai/ggplot-greek.pdf", width = 8, height = 5)
-## ggplot object created here
-#dev.off()
-
-ggplot(fig2df %>% 
-         filter(gamma_ind == 'X2',
-                Conc != 'X1,X2 Uncorrelated'),
-       aes(x = g, y = value, colour = name)) + 
-  theme_minimal() +
-  geom_line() +   
-  theme(strip.text = element_text(size = 12),
-        text = element_text(size = 12),
-        axis.text = element_text(size = 12),
-        legend.title = element_blank(),
-        legend.position = 'bottom')+
-  geom_ribbon(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_ub), 
-              alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
-  facet_grid(rows = vars(Conc), cols = vars(Interference)) + 
-  xlab(TeX(r'(\gamma)'))+ 
-  ylab('Overall Effect') + ylim(-.042,.042)
-ggsave('/gpfs/ysm/project/forastiere/sgd37/cai/figures/x2intervention.png', width = 9, height = 6)
-
-#1100 x 800
-
-#testing ci
-ggplot(bigbiastab %>% filter(gamma_ind == 'X1'), aes(x = g, y = oe_haj)) + 
-  geom_line() + 
-  geom_errorbar(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_lb), colour = 'red') + 
-  facet_wrap(~label)
+for(i in c('DE', 'IE0', 'IE1', 'OE')){
+  #i = 'IE1'
+  plot_df = make_ms_figtab(bigbiastab, effect = i)
+  fig2df = plot_df$fig2df
+  #ylabel = plot_df$ylab
+  effect = plot_df$effect
+  
+  if(i == 'DE'){fig2df$true = fig2df$true_de; fig2df$est = fig2df$de_haj; ylab = 'Direct Effect'}
+  if(i == 'IE0'){fig2df$true = fig2df$true_ie0; fig2df$est = fig2df$ie0_haj; ylab = 'Indirect Effect (0)'}
+  if(i == 'IE1'){fig2df$true = fig2df$true_ie1; fig2df$est = fig2df$ie1_haj; ylab = 'Indirect Effect (1)'}
+  if(i == 'OE'){fig2df$true = fig2df$true_oe; fig2df$est = fig2df$oe_haj; ylab = 'Overall Effect'}
+  
+  
+  fig2df = fig2df %>% 
+    filter(Conc == 'X1,X2 Uncorr' & gamma_ind == 'Target X1' | 
+             Conc == 'X1,X2 Corr' & gamma_ind == 'Target X2' |
+             Conc == 'X1,X2 Uncorr' & gamma_ind == 'Target X2') 
+  ggplot(fig2df, aes(x = g, y = est))+#, #color = name, shape = name)) + 
+    theme_minimal() +
+    geom_point(colour = '#00BFC4') +
+    geom_line(aes(y = true)) + 
+    #scale_shape_manual(values=c(1)) +
+    theme(strip.text = element_text(size = 12),
+          text = element_text(size = 12),
+          axis.text = element_text(size = 12),
+          legend.title = element_blank(),
+          legend.position = 'bottom',
+          panel.spacing = unit(1.4, "lines")) +
+    geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
+                alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(Interference)) + 
+    xlab(TeX(r'(\gamma)')) + 
+    ylab(ylabel) #+ ylim(-.042,.042)
+  ggsave(paste0(fig_loc, '/', effect, '_modelsim_results.png'), width = 9, height = 6)
+}
 
 
+####################################################
+# ALL SCENARIO PLOTS
+####################################################
+#OE
 ggplot(bigbiastab %>% pivot_longer(c(true_oe, oe_ht)) ,aes(x = g, y = value, colour = name)) + 
   geom_line() +   
   theme(strip.text = element_text(size = 4, margin=margin(c(0,0,0,0))))+
@@ -415,12 +495,12 @@ ggplot(bigbiastab %>% pivot_longer(c(true_oe, oe_ht)) ,aes(x = g, y = value, col
   facet_wrap(~gamma_ind+label, ncol = 6)
 ggsave(paste0(fig_loc, '/mod_totalOE.png'), width = 9, height = 9)
 
-#de comp
+#de 
 ggplot(bigbiastab %>% pivot_longer(c(true_de, de_ht)) ,
        aes(x = g, y = value, colour = name)) + 
   geom_line() +   
   theme(strip.text = element_text(size = 7, margin=margin(c(0,0,0,0))))+
-  facet_wrap(~gamma_ind + label, ncol = 6)
+  facet_wrap(~gamma_ind + label, ncol = 4)
 ggsave(paste0(fig_loc, '/mod_totalDE.png'), width = 9, height = 9)
 
 
@@ -428,7 +508,7 @@ ggsave(paste0(fig_loc, '/mod_totalDE.png'), width = 9, height = 9)
 ggplot(bigbiastab %>% pivot_longer(c(ie0_haj, true_ie0)) ,aes(x = g, y = value, colour = name)) + 
   geom_line() +   
   theme(strip.text = element_text(size = 7, margin=margin(c(0,0,0,0))))+
-  facet_wrap(~gamma_ind + label, ncol = 6)
+  facet_wrap(~gamma_ind + label, ncol = 4)
 ggsave(paste0(fig_loc, '/mod_totalIE0.png'), width = 9, height = 9)
 
 ggplot(bigbiastab %>% pivot_longer(c(ie1_haj, true_ie1)) %>%
@@ -437,7 +517,7 @@ ggplot(bigbiastab %>% pivot_longer(c(ie1_haj, true_ie1)) %>%
   geom_line() +   
   theme(strip.text = element_text(size = 7, margin=margin(c(0,0,0,0))))+
   geom_ribbon(aes(x = g, ymin = ie1_haj_ana_lb, ymax = ie1_haj_ana_ub), alpha=0.1) + 
-  facet_wrap(~gamma_ind + label, ncol = 6)
+  facet_wrap(~gamma_ind + label, ncol = 4)
 ggsave(paste0(fig_loc, '/mod_totalIE1.png'), width = 9, height = 9)
 
 

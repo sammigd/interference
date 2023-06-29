@@ -1,5 +1,5 @@
 #calc means over 600 simulations for each scenario
-get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion = F){
+get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion = F, truth_use = NULL){
   #which_iter = 1
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
   
@@ -14,33 +14,51 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
     #wk = "scenario255_1_1_0.65.RSave"
     load(wk)
     
-    #potential outcomes
+    ###############################
+    # POTENTIAL OUTCOMES ##########
+    ###############################
+    #HT
     y0_ht[,i] = test$unadj[1,]
     y1_ht[,i] = test$unadj[2,]
     
+    #HAJ
     y0_haj[,i] = test$haj[1,]
     y1_haj[,i] = test$haj[2,]
     
-    #direct effect and error
-    # haj and ht
+    #HT Y0 VAR
+    y0_ht_var[,i] = test$ht_yhat_var[1,1,]
+    y0_ht_bootvar[,i] = test$ypop_bootvar[1,]
+    y0_ht_mcvar[,i] = y0_ht[,i]
+    
+    #HT Y1 VAR
+    y1_ht_var[,i] = test$ht_yhat_var[2,2,]
+    y1_ht_bootvar[,i] = test$ypop_bootvar[2,]
+    y1_ht_mcvar[,i] = y1_ht[,i]
+    
+    #HT Y COV
+    y_ht_covar[,i] = test$ht_yhat_var[1,2,]
+    
+    
+    
+    ###############################
+    # DIRECT EFFECT ###############
+    ###############################    
+    
+    #HT
     direct_ht[,i] = test$ht_direct["est",]
     direct_analyticalvar_ht[,i] = test$ht_direct["var",]
     direct_bootvar_ht[,i] = test$ht_direct["boot_var",]
     
+    #HAJ
     direct_haj[,i] = test$direct["est",]
     direct_analyticalvar_haj[,i] = test$direct["var",]
     direct_bootvar_haj[,i] = test$direct["boot_var",]
     
-    #indirect effect and error
-    # haj and ht
-    indirect0_haj[,i] = test$indirect0['est',]
-    indirect0_analyticalvar_haj[,i] = test$indirect0['var',]
-    indirect0_bootvar_haj[,i] = test$indirect0['boot_var',]
+    ###############################
+    # INDIRECT EFFECT #############
+    ###############################
     
-    indirect1_haj[,i] = test$indirect1['est',]
-    indirect1_analyticalvar_haj[,i] = test$indirect1['var',]
-    indirect1_bootvar_haj[,i] = test$indirect1['boot_var',]
-    
+    # HT
     indirect0_ht[,i] = test$ht_indirect0['est',]
     indirect0_analyticalvar_ht[,i] = test$ht_indirect0['var',]
     indirect0_bootvar_ht[,i] = test$ht_indirect0['boot_var',]
@@ -49,41 +67,67 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
     indirect1_analyticalvar_ht[,i] = test$ht_indirect1['var',]
     indirect1_bootvar_ht[,i] = test$ht_indirect1['boot_var',]
     
-    #overall effect and error
-    #haj and ht
-    oe_haj[,i] = test$oe['est',]
-    oe_analyticalvar_haj[,i] = test$oe['var',]
-    oe_bootvar_haj[,i] = test$oe['boot_var',]
+    # HAJ
+    indirect0_haj[,i] = test$indirect0['est',]
+    indirect0_analyticalvar_haj[,i] = test$indirect0['var',]
+    indirect0_bootvar_haj[,i] = test$indirect0['boot_var',]
     
+    indirect1_haj[,i] = test$indirect1['est',]
+    indirect1_analyticalvar_haj[,i] = test$indirect1['var',]
+    indirect1_bootvar_haj[,i] = test$indirect1['boot_var',]
+    
+    ###############################
+    # OVERALL EFFECT ##############
+    ###############################
+
+    #HT
     oe_ht[,i] = test$ht_oe['est',]
     oe_analyticalvar_ht[,i] = test$ht_oe['var',]
     oe_bootvar_ht[,i] = test$ht_oe['boot_var',]
     
+    #HAJ
+    oe_haj[,i] = test$oe['est',]
+    oe_analyticalvar_haj[,i] = test$oe['var',]
+    oe_bootvar_haj[,i] = test$oe['boot_var',]
+    
+    #SUM OF WEGITHS
+    sum_wts0[,i] = test$wtlist[1,]
+    sum_wts1[,i] = test$wtlist[2,]
+    
+    
+    
+    ###############################
+    # TRUE PARAMETERS #############
+    ###############################
+    
     if(diffusion == F){
-      true_ie0[,i] = test$het_ie_truth$ie[1,,ngam]
-      true_ie1[,i] = test$het_ie_truth$ie[2,,ngam]
-      true_de[,i] = apply(test$het_ie_truth$true_y_ie[,,2] - test$het_ie_truth$true_y_ie[,,1], 2, mean)
-      true_oe[,i] = test$het_ie_truth$oe[,ngam]
-      true_y0[,i] = apply(test$het_ie_truth$true_y_ie[,,1], 2, mean)
-      true_y1[,i] = apply(test$het_ie_truth$true_y_ie[,,2], 2, mean)
+      true_de[,i] = apply(test$truth$true_y_ie[,,2] - test$truth$true_y_ie[,,1], 2, mean, na.rm = T)
+      true_y0[,i] = apply(test$truth$true_y_ie[,,1], 2, mean, na.rm = T)
+      true_y1[,i] = apply(test$truth$true_y_ie[,,2], 2, mean, na.rm =T)
       
-    }else{
       true_ie0[,i] = test$truth$ie[1,,ngam]
       true_ie1[,i] = test$truth$ie[2,,ngam]
-      true_de[,i] = test$truth$de
       true_oe[,i] = test$truth$oe[,ngam]
-      true_y0[,i] = test$truth$y0
-      true_y1[,i] = test$truth$y1
+    }else{
+      true_de[,i] = truth_use$true_de#test$truth$de
+      true_y0[,i] = truth_use$true_y0#test$truth$y0
+      true_y1[,i] = truth_use$true_y1#test$truth$y1
+      
+      true_ie0[,i] = truth_use$true_ie0
+      true_ie1[,i] =truth_use$true_ie1
+      true_oe[,i] = NA
       
     }
     
     if(beta4 == 0){
       true_oe[,i] = 0
+      true_ie1[,i] = 0
+      true_ie0[,i] = 0
     }
     
-    oe_mcvar_ht[,i] = test$ht_oe_mcvar
-    
-    #coverage
+    ###############################
+    # COVERAGE ####################
+    ###############################
     oe_anacoverage_ht[,i] = (true_oe[,i] >= test$ht_oe['LB',]) & (true_oe[,i] <= test$ht_oe['UB',])
     oe_anacoverage_haj[,i] = (true_oe[,i] >= test$oe['LB',]) &  (true_oe[,i] <= test$oe['UB',])
     
@@ -97,20 +141,33 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
     ie0_bootcoverage_ht[,i] = (true_ie0[,i] >= test$ht_indirect0['boot_var_LB',]) &  (true_ie0[,i] <= test$ht_indirect0['boot_var_UB',]) 
     ie0_bootcoverage_haj[,i] = (true_ie0[,i] >= test$indirect0['boot_var_LB',]) & (true_ie0[,i] <= test$indirect0['boot_var_UB',])
     
+    #ie1 coverage
+    ie1_anacoverage_ht[,i] = (true_ie1[,i] >= test$ht_indirect1['LB',]) & (true_ie1[,i] <= test$ht_indirect1['UB',])
+    ie1_anacoverage_haj[,i] = (true_ie1[,i] >= test$indirect1['LB',]) &  (true_ie1[,i] <= test$indirect1['UB',])
+    
+    ie1_bootcoverage_ht[,i] = (true_ie1[,i] >= test$ht_indirect1['boot_var_LB',]) &  (true_ie1[,i] <= test$ht_indirect1['boot_var_UB',]) 
+    ie1_bootcoverage_haj[,i] = (true_ie1[,i] >= test$indirect1['boot_var_LB',]) & (true_ie1[,i] <= test$indirect1['boot_var_UB',])
     
     #de coverage
-    de_anacoverage_ht[,i] = (3 >= test$ht_direct['low_int',]) & (3 <= test$ht_direct['high_int',])
-    de_anacoverage_haj[,i] = (3 >= test$direct['low_int',]) & (3 <= test$direct['high_int',])
+    de_anacoverage_ht[,i] = (true_de[,i] >= test$ht_direct['low_int',]) & (true_de[,i] <= test$ht_direct['high_int',])
+    de_anacoverage_haj[,i] = (true_de[,i] >= test$direct['low_int',]) & (true_de[,i] <= test$direct['high_int',])
     
-    de_bootcoverage_ht[,i] = (3 >= test$ht_direct['boot_var_LB',]) & (3 <= test$ht_direct['boot_var_UB',])
-    de_bootcoverage_haj[,i] = (3 >= test$direct['boot_var_LB',]) & (3 <= test$direct['boot_var_UB',])
+    de_bootcoverage_ht[,i] = (true_de[,i] >= test$ht_direct['boot_var_LB',]) & (true_de[,i] <= test$ht_direct['boot_var_UB',])
+    de_bootcoverage_haj[,i] = (true_de[,i] >= test$direct['boot_var_LB',]) & (true_de[,i] <= test$direct['boot_var_UB',])
     
-    #ie coverage
-    #ie_anacoverage_ht[,i] = (true_ie0[,i] > test$ht_oe['boot_var_LB',]) & (true_oe[,i] < test$ht_oe['UB',])
-    #ie_anacoverage_haj[,i] = (true_ie0[,i] > test$oe['boot_var_LB',]) &  (true_oe[,i] < test$oe['UB',])
+    #y0 coverage
+    y0_anacoverage_ht[,i] = (true_y0[,i] >= y0_ht[,i] - 1.96*sqrt(y0_ht_var[,i])) & 
+      (true_y0[,i] <= y0_ht[,i] + 1.96*sqrt(y0_ht_var[,i]))
+    #y1 coverage
+    y1_anacoverage_ht[,i] = (true_y1[,i] >= y1_ht[,i] - 1.96*sqrt(y1_ht_var[,i])) & 
+      (true_y1[,i] <= y1_ht[,i] + 1.96*sqrt(y1_ht_var[,i]))
+    #y0 boot coverage
+    y0_bootcoverage_ht[,i] = (true_y0[,i] >= y0_ht[,i] - 1.96*sqrt(y0_ht_bootvar[,i])) & 
+      (true_y0[,i] <= y0_ht[,i] + 1.96*sqrt(y0_ht_bootvar[,i]))
+    #y1 boot coverage
+    y1_bootcoverage_ht[,i] = (true_y1[,i] >= y1_ht[,i] - 1.96*sqrt(y1_ht_bootvar[,i])) & 
+      (true_y1[,i] <= y1_ht[,i] + 1.96*sqrt(y1_ht_bootvar[,i]))
     
-    #ie_bootcoverage_ht[,i] = (true_oe[,i] > test$ht_oe['boot_var_LB',]) &  (true_oe[,i] < test$ht_oe['boot_var_UB',]) 
-    #ie_bootcoverage_haj[,i] = (true_oe[,i] > test$oe['boot_var_LB',]) & (true_oe[,i] < test$oe['boot_var_UB',])
   }
   
   #now i have the vector for each sim. next - average over the sims 43
@@ -124,19 +181,20 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
                    oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
                    true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
                    y0_ht, y1_ht, y0_haj, y1_haj,
+                   y0_ht_var, y1_ht_var, y0_ht_bootvar, y1_ht_bootvar, y0_ht_mcvar, y1_ht_mcvar, 
                    oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
                    de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
                    ie0_anacoverage_ht, ie0_anacoverage_haj, ie0_bootcoverage_ht, ie0_bootcoverage_haj,
-                   oe_mcvar_ht
+                   ie1_anacoverage_ht, ie1_anacoverage_haj, ie1_bootcoverage_ht, ie1_bootcoverage_haj,
+                   y0_anacoverage_ht, y1_anacoverage_ht, y_ht_covar, y0_bootcoverage_ht, y1_bootcoverage_ht, sum_wts0, sum_wts1
   )
   
-  oe_mcvar_ht = apply(oe_ht, 1, var)
   
   #take the mean of the 600 simulations
   for(i in 1:length(e.names)){
     est = estimates[[i]]
-    cal = apply(est, 1, mean, na.rm = T)
-    if(e.names[i] != 'oe_mcvar_ht'){assign(e.names[i], cal)}
+    if(e.names[i] == 'y0_ht_mcvar' | e.names[i] == 'y1_ht_mcvar'){cal = apply(est, 1, var)}else{cal = apply(est, 1, mean)}
+    assign(e.names[i], cal)
   }
   
   return(list(direct_ht, direct_analyticalvar_ht, direct_bootvar_ht, #HERE!!!
@@ -149,10 +207,13 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
               oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
               true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
               y0_ht, y1_ht, y0_haj, y1_haj,
+              y0_ht_var, y1_ht_var, y0_ht_bootvar, y1_ht_bootvar, y0_ht_mcvar, y1_ht_mcvar, 
               oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
               de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
               ie0_anacoverage_ht, ie0_anacoverage_haj, ie0_bootcoverage_ht, ie0_bootcoverage_haj,
-              oe_mcvar_ht))
+              ie1_anacoverage_ht, ie1_anacoverage_haj, ie1_bootcoverage_ht, ie1_bootcoverage_haj,
+              y0_anacoverage_ht, y1_anacoverage_ht, y_ht_covar, y0_bootcoverage_ht, y1_bootcoverage_ht, 
+              sum_wts0, sum_wts1))
 }
 
 
@@ -161,16 +222,16 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
 pick_var <- function(v = c('a', 'b'), bigbiastab){
   if (v == 'b'){
     bigbiastab = bigbiastab %>% 
-      mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(direct_bootvar_ht),
-             de_ht_ana_ub = de_ht + 1.96*sqrt(direct_bootvar_ht),
+      mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(de_bootvar_ht),
+             de_ht_ana_ub = de_ht + 1.96*sqrt(de_bootvar_ht),
              ie0_ht_ana_lb = ie0_ht - 1.96*sqrt(indirect0_bootvar_ht),
              ie0_ht_ana_ub = ie0_ht + 1.96*sqrt(indirect0_bootvar_ht),
              ie1_ht_ana_lb = ie1_ht - 1.96*sqrt(indirect1_bootvar_ht),
              ie1_ht_ana_ub = ie1_ht + 1.96*sqrt(indirect1_bootvar_ht),
              oe_ht_ana_lb = oe_ht - 1.96*sqrt(oe_bootvar_ht),
              oe_ht_ana_ub = oe_ht + 1.96*sqrt(oe_bootvar_ht),
-             de_haj_ana_lb = de_haj - 1.96*sqrt(direct_bootvar_haj),
-             de_haj_ana_ub = de_haj + 1.96*sqrt(direct_bootvar_haj),
+             de_haj_ana_lb = de_haj - 1.96*sqrt(de_bootvar_haj),
+             de_haj_ana_ub = de_haj + 1.96*sqrt(de_bootvar_haj),
              ie0_haj_ana_lb = ie0_haj - 1.96*sqrt(indirect0_bootvar_haj),
              ie0_haj_ana_ub = ie0_haj + 1.96*sqrt(indirect0_bootvar_haj),
              ie1_haj_ana_lb = ie1_haj - 1.96*sqrt(indirect1_bootvar_haj),
@@ -180,16 +241,16 @@ pick_var <- function(v = c('a', 'b'), bigbiastab){
       filter(gamma_ind != 'X3')
   } else{
     bigbiastab = bigbiastab %>% 
-      mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(direct_analyticalvar_ht),
-             de_ht_ana_ub = de_ht + 1.96*sqrt(direct_analyticalvar_ht),
+      mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(de_analyticalvar_ht),
+             de_ht_ana_ub = de_ht + 1.96*sqrt(de_analyticalvar_ht),
              ie0_ht_ana_lb = ie0_ht - 1.96*sqrt(indirect0_analyticalvar_ht),
              ie0_ht_ana_ub = ie0_ht + 1.96*sqrt(indirect0_analyticalvar_ht),
              ie1_ht_ana_lb = ie1_ht - 1.96*sqrt(indirect1_analyticalvar_ht),
              ie1_ht_ana_ub = ie1_ht + 1.96*sqrt(indirect1_analyticalvar_ht),
              oe_ht_ana_lb = oe_ht - 1.96*sqrt(oe_analyticalvar_ht),
              oe_ht_ana_ub = oe_ht + 1.96*sqrt(oe_analyticalvar_ht),
-             de_haj_ana_lb = oe_haj - 1.96*sqrt(direct_analyticalvar_haj),
-             de_haj_ana_ub = oe_haj + 1.96*sqrt(direct_analyticalvar_haj),
+             de_haj_ana_lb = de_haj - 1.96*sqrt(de_analyticalvar_haj),
+             de_haj_ana_ub = de_haj + 1.96*sqrt(de_analyticalvar_haj),
              ie0_haj_ana_lb = ie0_haj - 1.96*sqrt(indirect0_analyticalvar_haj),
              ie0_haj_ana_ub = ie0_haj + 1.96*sqrt(indirect0_analyticalvar_haj),
              ie1_haj_ana_lb = ie1_haj - 1.96*sqrt(indirect1_analyticalvar_haj),
@@ -202,3 +263,54 @@ pick_var <- function(v = c('a', 'b'), bigbiastab){
   return(bigbiastab)
 }
 
+
+make_ms_figtab <- function(bigbiastab, effect){
+  #if(effect == 'OE'){bigbiastab = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)); ylab = 'Overall Effect'}
+  #if(effect == 'DE'){bigbiastab = bigbiastab %>% pivot_longer(c(true_de, de_haj)); ylab = 'Direct Effect'}
+  #if(effect == 'IE0'){bigbiastab = bigbiastab %>% pivot_longer(c(true_ie0, ie0_haj)); ylab = 'Indirect Effect (0)'}
+  #if(effect == 'IE1'){bigbiastab = bigbiastab %>% pivot_longer(c(true_ie1, ie1_haj)); ylab = 'Indirect Effect (1)'}
+  
+  lbx = bigbiastab %>% pull(names(bigbiastab)[str_detect(names(bigbiastab), paste0(str_to_lower(effect), '_haj_ana_lb'))])
+  ubx = bigbiastab %>% pull(names(bigbiastab)[str_detect(names(bigbiastab), paste0(str_to_lower(effect), '_haj_ana_ub'))])
+  
+  fig2df = bigbiastab %>%
+    mutate(lb = lbx, ub = ubx) %>%
+    filter((str_detect(label, 'beta3 = 0') | 
+              (str_detect(label, 'beta3 = 1') & str_detect(label, 'beta4 = 0,'))) & concordance != "0.65") %>%
+    mutate(Interference = case_when(str_detect(label, 'beta4 = 0,') &  str_detect(label, 'beta3 = 0,')~ 'No Interference',
+                                    str_detect(label, 'beta3 = 1') ~ 'Homogeneous \nInterference',
+                                    str_detect(label, 'beta4 = 0.5') ~ 'Moderate \nHeterogeneous \nInterference',
+                                    str_detect(label, 'beta4 = 1') ~ 'Strong \nHeterogeneous \nInterference')) %>%
+    filter(!is.na(Interference)) %>%
+    mutate(Conc = case_when(concordance == '0' ~ 'X1,X2 Uncorr',
+                            concordance == '0.8' ~ 'X1,X2 Corr')) %>%
+    mutate(Interference = factor(Interference, levels = c('No Interference',
+                                                          'Homogeneous \nInterference',
+                                                          'Moderate \nHeterogeneous \nInterference',
+                                                          'Strong \nHeterogeneous \nInterference'))) %>%
+    mutate(Conc = factor(Conc, levels = c('X1,X2 Uncorr', 'X1,X2 Corr'))) %>%#,
+           #name = ifelse(str_detect(name, 'haj'), paste0('Hajek ', effect), paste0('True ', effect)),
+           #name = factor(name, levels = c( paste0('True ', effect),paste0('Hajek ', effect)))) %>%
+    mutate(gamma_ind = case_when(gamma_ind == 'X1' ~ 'Target X1',
+                                 gamma_ind == 'X2' ~ 'Target X2'))
+  return(list(fig2df = fig2df, effect = effect))
+}
+
+FromAlphaToRE <- function(alpha, lin_pred, alpha_re_bound = 10) {
+  
+  alpha_re_bound <- abs(alpha_re_bound)
+  
+  r <- optimise(f = AlphaToBi, lower = - 1 * alpha_re_bound,
+                upper = alpha_re_bound, alpha = alpha, lin_pred = lin_pred)
+  r <- r$minimum
+  if (alpha_re_bound - abs(r) < 0.1) {
+    warning(paste0('bi = ', r, ', alpha_re_bound = ', alpha_re_bound))
+  }
+  return(r)
+}
+
+AlphaToBi <- function(b, alpha, lin_pred) {
+  exp_lin_pred <- exp(lin_pred)
+  r <- abs(mean(exp_lin_pred / (exp_lin_pred + exp(- b))) - alpha)
+  return(r)
+}

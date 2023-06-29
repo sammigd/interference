@@ -1,27 +1,27 @@
 #create new function: get true vector of IE under heterogeneous interference 
 
-get_het_ie <- function(dta, gamma_numer, cov_cols, interference = c('none', 'homog', 'hetero'),
-                       beta_0, beta_1, beta_2, beta_3, beta_4, alpha, alpha_re_bound = 10){
+get_het_ie <- function(dta, gamma_numer, cov_cols, 
+                       beta_0 = NULL, beta_1 = NULL, beta_2 = NULL, beta_3 = NULL, beta_4 = NULL, 
+                       alpha, alpha_re_bound = 10, diffusion = F, diffusion_p = NULL, nn){
   #beta_3  = 1
   #beta_2 = 0
-  #interference = 'hetero'
   #beta_4 = 2
   clust_avg = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer), 2))
   clust_avg_oe = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer)))
   
-  nn = 1500
+  nn = nn #nn =2
   for (sim in 1:nn){
+    print(paste0('start truth sim #', sim))
     #sim = 1
     for (clus in unique(dta$neigh)){ #for each cluster
-      #get covar and outcome vectors for cluster 
-      #Xj = dta[dta$neigh == clus , cov_cols]
+      if(clus %% 50 ==0){print(paste0('cluster #', clus))}
       #clus = 1
-      
-      Xj = dta[dta$neigh == clus , cov_cols]
+      mini = dta %>% filter(neigh == clus)
+      Xj = mini[,cov_cols]
     
       for (g in 1:ncol(gamma_numer)){
+        #if(g %% 10 ==0){print(paste0('gamma #', g))}
         #g = 1
-        
         gamma_use = gamma_numer[,g]
         lin_pred <- cbind(1, as.matrix(Xj)) %*% gamma_use
         
@@ -29,26 +29,48 @@ get_het_ie <- function(dta, gamma_numer, cov_cols, interference = c('none', 'hom
                                   alpha_re_bound = alpha_re_bound)
         
         probs = expit(lin_pred + re_alpha)
-        
         new_Aj = rbinom(length(probs),1,probs) 
         #redraw if no variation in Aj
         if(sum(new_Aj) == length(probs) | sum(new_Aj) == 0){new_Aj = rbinom(length(probs),1,probs)}
+        if(sum(new_Aj) == length(probs) | sum(new_Aj) == 0){new_Aj = rbinom(length(probs),1,probs)}
         
-        
-        new_Tj = (sum(new_Aj) - new_Aj) / length(probs)
-        #Tprimej = sum(new_Aj[Xj[,1] == 1]) / length(probs)
-        Tprimej = (sum(new_Aj[Xj[,1] == 1]) - (new_Aj*new_Xj)) / sum(new_Aj)
-        
-        
-        #outcome model
-        pot_out = beta_0 + beta_1*new_Aj + 
-          (as.matrix(Xj, ncol = 3) %*% c(beta_2, 0, 0)) + 
-          #beta_2*Xj +
-          beta_3*new_Tj + beta_4*Tprimej
+        if(diffusion == F){
+          new_Tj = sum(new_Aj) / length(probs)
+          Tprimej = sum(new_Aj*Xj[,1]) / sum(new_Aj)
           
-        Yj_a0 = mean(pot_out[new_Aj == 0])
-        Yj_a1 = mean(pot_out[new_Aj == 1])
-        Yj = mean(pot_out)
+          #outcome model
+          mini$pot_out = beta_0 + beta_1*new_Aj + 
+            (as.matrix(Xj, ncol = 3) %*% c(beta_2, 0, 0)) + 
+            beta_3*new_Tj + beta_4*Tprimej
+          #if(is.na(sum(Tprimej))){print('tjprime nan'); print(Tprimej); print(new_Aj); print(Xj[,1])}
+        }
+        if(diffusion == T){
+          #print('diff true')
+          mini$Aij = new_Aj
+          #CALCULATE Y USING A
+          mini$is_center_trted <- rep(mini %>% slice(1) %>% pull(Aij), each = 5)
+          mini$Tij <- rep(mini %>% summarise(Tij = sum(Aij)) %>% pull(Tij), each = 5)
+          #print(mini)
+          
+          mini = mini %>%
+            mutate(n_untrt_alter = sum(Aij==0 & X1ij==0 & is_center_trted == 1))# %>%
+          #print(mini)
+          mini = mini %>%
+            mutate(pot_out = case_when(Aij == 1 ~ 1, #treated node
+                                       #untrt alter where center IS NOT treated
+                                       Aij == 0 & X1ij == 0 & is_center_trted == 0 ~ 0,
+                                       #untreated center - #max of a coin flip for each treated alter in the cluster
+                                       Aij == 0 & X1ij == 1 ~ as.numeric(max(rbinom(Tij, 1, diffusion_p))), 
+                                       #untrt alter where center IS treated
+                                       Aij == 0 & X1ij == 0 & is_center_trted == 1 ~ as.numeric(rbinom(n_untrt_alter, 1, diffusion_p)))) #change the first 1 to number of rows
+          
+        }
+        #print('*')
+
+          
+        Yj_a0 = mean(mini$pot_out[new_Aj == 0]) 
+        Yj_a1 = mean(mini$pot_out[new_Aj == 1]) 
+        Yj = mean(mini$pot_out)
           
         clust_avg[clus,g,1] = clust_avg[clus,g,1] + Yj_a0
         clust_avg[clus,g,2] = clust_avg[clus,g,2] + Yj_a1

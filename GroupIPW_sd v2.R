@@ -31,7 +31,7 @@
 #' @param verbose Whether printing of progress is wanted. Defaults to TRUE.
 #' 
 #' @export
-GroupIPW_sd2 <- function(dta, cov_cols, phi_hat, gamma_numer = NULL, alpha,
+GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
                      neigh_ind = NULL, trt_col = NULL, out_col = NULL, 
                      alpha_re_bound = 10, integral_bound = 10,
                      keep_re_alpha = FALSE, estimand = c('1', '2'),
@@ -44,7 +44,6 @@ GroupIPW_sd2 <- function(dta, cov_cols, phi_hat, gamma_numer = NULL, alpha,
   estimand <- match.arg(estimand)
   integral_bound <- abs(integral_bound)
   alpha_re_bound <- abs(alpha_re_bound)
-  phi_hat[[1]] <- matrix(phi_hat[[1]], ncol = 1)
   dta <- as.data.frame(dta)
   
   pop_p_trt = sum(dta[,trt_col])/nrow(dta)
@@ -88,9 +87,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, phi_hat, gamma_numer = NULL, alpha,
   if (!is.null(out_col)) {
     names(dta)[out_col] <- 'Y'
   }
-  if (is.null(gamma_numer)) {
-    gamma_numer <- matrix(phi_hat[[1]], ncol = 1)
-  }
+
   
   for (gg in 1 : ncol(gamma_numer)) { #changed this
     #gg = 1

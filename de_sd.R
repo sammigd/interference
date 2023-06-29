@@ -18,7 +18,7 @@
 #' 
 #' @export
 DE_sd <- function(ypop, ypop_var, boots = NULL, gamma = NULL,
-               alpha_level = 0.05) {
+               alpha_level = 0.05, ygroup) {
   
   quants <- c(0, 1) + c(1, - 1) * alpha_level / 2
   norm_quant <- - qnorm(alpha_level / 2)
@@ -43,6 +43,13 @@ DE_sd <- function(ypop, ypop_var, boots = NULL, gamma = NULL,
   de[2, ] <- apply(ypop_var, 3, delta_method)
   de[3, ] <- de[1, ] - norm_quant * sqrt(de[2, ])
   de[4, ] <- de[1, ] + norm_quant * sqrt(de[2, ])
+  
+  #calculate covariance matrix for haj estimator
+  sq = (c(ypop[1,], ypop[2,])) %*% t(c(ypop[1,], ypop[2,])) #this is phi^2?
+
+  #calculate covariance matrix for ht estimator
+  #cluster_level_de = yhat_group_sd2$yhat_group[,2,] -  yhat_group_sd2$yhat_group[,1,]
+  #de_covariance = cov(cluster_level_de)
   
   if (!is.null(boots)) {
     de[5, ] <- apply(boots[2, , ] - boots[1, , ], 1, var)

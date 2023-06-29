@@ -1,4 +1,4 @@
-oe_sigtest <- function(oe_output, oe_cov){ 
+oe_sigtest <- function(oe_output, oe_cov, gammas_idx = c(1:ncol(gamma_numer))){ 
   #make sure you only input the 1-33 rows
   
   #testing
@@ -6,8 +6,8 @@ oe_sigtest <- function(oe_output, oe_cov){
   #oe_cov = oe_cov[1:33, 1:33]
 
   #calculate test statistic
-  oe_est = oe_output['est',1:33]
-  oe_cov = oe_cov[1:33, 1:33]
+  oe_est = oe_output['est', gammas_idx]
+  oe_cov = oe_cov[gammas_idx, gammas_idx]
   
   #get differences between each oe estimate
   diff_mat = as.matrix(dist(oe_est, method = 'manhattan')) #fix to not be just 1-3

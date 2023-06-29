@@ -25,6 +25,7 @@ Ypop_sd <- function(ygroup, scores = NULL,
   alpha <- as.numeric(dimnames(ygroup$yhat_group)[[3]])
   
   if(horvitzthompson == T){
+    
     ypop <- apply(ygroup$yhat_group, c(2, 3), mean, na.rm = TRUE)
     oeypop = apply(ygroup$yhat_group, c(3), mean, na.rm = TRUE)
 
@@ -52,7 +53,9 @@ Ypop_sd <- function(ygroup, scores = NULL,
     
     oe_ht_var = A_inv %*% V %*% t(A_inv)
     
-  } else{
+    return(list(ypop = ypop, ypop_var = ypop_var, oe_ht_var = oe_ht_var))
+    
+  } else{  #if hajek
     
     #the estimates
     ypop0 <- make_hajek(ygroup, dta)
@@ -66,7 +69,6 @@ Ypop_sd <- function(ygroup, scores = NULL,
     #hajek at the cluster level
     haj_i = ygroup$yhat_group / ygroup$wt_list #apply(ygroup$yhat_group, c(2,3), "*", size$cluster_pop) / ygroup$wt_list
 
-     
     psi_i = ygroup$yhat_group
     psi_oe = ygroup$oe_yhat_group
 
@@ -75,7 +77,7 @@ Ypop_sd <- function(ygroup, scores = NULL,
       psi_oe[clus,] = (ygroup$oe_yhat_group[clus,] * unlist(size[clus, 'cluster_pop'])) - (ypop0$oe_haj * ygroup$oe_wt_list[clus,])
     }
     
-    #for the direct effect hajek variane
+    #for ypop var
     ypop_var_hj <- array(NA, dim = c(2, 2, ncol(gamma_numer)))
     for (g in 1:dim(ygroup$yhat_group)[3]){
       int1 = psi_i[,,g] #the psi for a specific gamma
@@ -90,8 +92,25 @@ Ypop_sd <- function(ygroup, scores = NULL,
       
       sln = a_inv %*% v %*% t(a_inv) #now need to save for each gamma
       ypop_var_hj[,,g] = sln / n_neigh
-    }
+    } #this and de version seem equivalent...
     
+    
+    #for de
+    ypop_var_hj_de <- array(NA, dim = c(ncol(gamma_numer), ncol(gamma_numer)))
+    int2 = matrix(rep(0, 128^2), nrow = 128)
+      
+    for (clus in 1:n_neigh){
+      int1 = c(psi_i[clus,1,], psi_i[clus,2,]) #this is psi
+      int2 = int2 + (int1 %*% t(int1)) #psi * t(psi) summed over clusters
+    }
+      
+    v = int2/n_neigh
+    a_de = c(wts[1,], wts[2,]) / n_neigh
+    a_inv = solve(diag(a_de))
+      
+    sln = a_inv %*% v %*% t(a_inv) #now need to save for each gamma
+    ypop_var_hj_de[,] = sln[ncol(gamma_numer) + 1 : ncol(gamma_numer*2), 1: ncol(gamma_numer)] / n_neigh
+  
     #for the indirect effect hajek variance
     ypop_var_hj_gammalevel = array(NA, dim = c(ncol(gamma_numer), ncol(gamma_numer), 2))
     for (trt in 1:2){
@@ -125,24 +144,8 @@ Ypop_sd <- function(ygroup, scores = NULL,
 
     sln = a_inv %*% v %*% t(a_inv)
     ypop_var_hj_oe = sln / n_neigh
-    #ypop_var_hj_oe = NULL
     
-    #try GA way (results look diff than below)
-    #ypop_var <- apply(ypop, 3, function(x) cov(x, use = use))
-    #ypop_var <- array(ypop_var, dim = c(2, 2, ncol(gamma_numer)))
-    # In order to get 1 / N, instead of 1 / (N - 1) in the variance estimates.
-    #ypop_var <- ypop_var * (n_neigh - 1) / n_neigh
-    #ypop_var <- ypop_var / n_neigh  # Since we have n_neigh clusters.
-    #dimnames(ypop_var) <- list(a = c(0, 1), a = c(0, 1), gamma = gamma_numer[2,])
-    
-    
-    
-    return(list(ypop = ypop, ypop_var = ypop_var_hj, ypop_var_ie = ypop_var_hj_gammalevel, ypop_var_oe = ypop_var_hj_oe))
-    
-    
+    return(list(ypop = ypop, ypop_var = ypop_var_hj, ypop_var_hj_de = ypop_var_hj_de, ypop_var_ie = ypop_var_hj_gammalevel, ypop_var_oe = ypop_var_hj_oe))
     
   }
-  
-  
-  return(list(ypop = ypop, ypop_var = ypop_var, oe_ht_var = oe_ht_var))
 }  

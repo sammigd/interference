@@ -96,11 +96,16 @@ Ypop_sd <- function(ygroup, scores = NULL,
     
     
     #for de
-    int2 = matrix(rep(0, 128^2), nrow = 128)
-    int2_oe = matrix(rep(0, 128^2), nrow = 128)
+    int2 = matrix(rep(0, (2*ngam)^2), nrow = (2*ngam))
+    int2_oe = matrix(rep(0, (2*ngam)^2), nrow = (2*ngam))
+    
     for (clus in 1:n_neigh){
       int1 = c(psi_i[clus,1,], psi_i[clus,2,]) #this is psi
       int1_oe = c(psi_oe[clus,], psi_oe[clus,])
+      
+      print(str(int1))
+      print(str(int2))
+      print(str((int1 %*% t(int1))))
       
       int2 = int2 + (int1 %*% t(int1)) #psi * t(psi) summed over clusters
       int2_oe = int2_oe + (int1_oe %*% t(int1_oe))

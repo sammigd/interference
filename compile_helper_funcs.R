@@ -192,6 +192,7 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
   
   #take the mean of the 600 simulations
   for(i in 1:length(e.names)){
+    print(str(estimates[[i]]))
     est = estimates[[i]]
     if(e.names[i] == 'y0_ht_mcvar' | e.names[i] == 'y1_ht_mcvar'){cal = apply(est, 1, var)}else{cal = apply(est, 1, mean)}
     assign(e.names[i], cal)

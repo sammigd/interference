@@ -1,7 +1,7 @@
 #create new function: get true vector of IE under heterogeneous interference 
 
 get_het_ie <- function(dta, gamma_numer, cov_cols, 
-                       beta_0 = NULL, beta_1 = NULL, beta_2 = NULL, beta_3 = NULL, beta_4 = NULL, 
+                       beta_0 = NULL, beta_1 = NULL, beta_2 = NULL, beta_3 = NULL, beta_4 = NULL, beta_5 = beta_5,
                        alpha, alpha_re_bound = 10, diffusion = F, diffusion_p = NULL, nn){
   #beta_3  = 1
   #beta_2 = 0
@@ -37,11 +37,13 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
         if(diffusion == F){
           new_Tj = sum(new_Aj) / length(probs)
           Tprimej = sum(new_Aj*Xj[,1]) / sum(new_Aj)
+          Tprimej2 = sum(new_Aj*Xj[,2]) / sum(new_Aj)
+          
           
           #outcome model
           mini$pot_out = beta_0 + beta_1*new_Aj + 
             (as.matrix(Xj, ncol = 3) %*% c(beta_2, 0, 0)) + 
-            beta_3*new_Tj + beta_4*Tprimej
+            beta_3*new_Tj + beta_4*Tprimej + beta_5*Tprimej2
           #if(is.na(sum(Tprimej))){print('tjprime nan'); print(Tprimej); print(new_Aj); print(Xj[,1])}
         }
         if(diffusion == T){

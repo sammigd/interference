@@ -1,11 +1,35 @@
-source('/gpfs/ysm/project/forastiere/sgd37/cai/scripts/compile_helper_funcs.R')
+library(stringr)
+library(latex2exp)
+library(tidyverse)
 
-fig_loc = "~/project/cai/figures/march01meeting"
 
-setwd("~/project/cai/diffusion_simtruth_feb27")
+#load the helper functions
+source('/home/sgd37/project/cai/interference/compile_helper_funcs.R')
+
+#set the output folder
+fig_loc = "~/project/cai/figures/nov16_laura"
+figloc2 = 'nov16_laura'
+
+#set the folder where the simulation results are
+setwd("~/project/cai/ms_diffusion_2023nov17_wtruth")
+
+#load in the diffusion truth simulation results
+#load('~/project/cai/Y0_truth_sim_df.Rsave')
+
+
+#get the parameters
 alliters = list.files()
 table(str_remove(alliters, word(alliters, sep = '_')))
-parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))[-7]
+parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-7]
+
+
+gl = seq(from = -.2, to = .2, length.out = 33)
+ngl = rep(0, 33)
+gamma_list = rbind(rep(0, 33),
+                   c(ngl, gl),
+                   c(gl, ngl))
+gamma_list = cbind(gamma_list, c(0,0,0))
+gamma_numer = gamma_list
 ngam = ncol(gamma_numer)
 diffusion = T
 
@@ -29,11 +53,12 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
 bigbiastab = array(NA, dim = c(0, 30))
 #compare bias for all the different parameters
 for (parms in 1:length(parmlist)){
-  print(parms)
+  print(paste('parms=',parms))
   #parms = 1
   #make parms pretty
   ugly_parm = str_split(parmlist[parms], '_')
   pretty_parm = paste0('conc = ', ugly_parm[[1]][2], ', \np(diff) = ', str_sub(ugly_parm[[1]][3], start = 1, end =-7 ))
+  #print(pretty_parm)
   concordance = ugly_parm[[1]][2]
   pdiff = str_sub(ugly_parm[[1]][3], start = 1, end =-7 )
   truth_use = Y0_truth_bar[Y0_truth_bar$concordance == concordance & Y0_truth_bar$pdiff == pdiff,] %>% 
@@ -48,8 +73,9 @@ for (parms in 1:length(parmlist)){
     g = c(rep(gamma_list[3,1:floor(ngam/2)], 2), 0),
     gamma_ind = c(rep('X2', 33), rep('X1', 33), 'X1')) %>% 
     mutate(#True parameter values
-           true_oe = true_oe, true_ie1 = true_ie1, true_ie0 = true_ie0, 
-           true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
+           true_oe = true_oe, 
+           #true_ie1 = true_ie1, true_ie0 = true_ie0, 
+           #true_y0 = true_y0, true_y1 = true_y1, true_de = 0,#(true_y1 - true_y0),
            #estimated parameter values
            de_ht = direct_ht, de_haj = direct_haj,
            ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
@@ -85,6 +111,7 @@ for (parms in 1:length(parmlist)){
 bigbiastab = pick_var('a', bigbiastab) #this makes CIs
 
 #bigbiastab = merge(bigbiastab, Y0_truth_bar, by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
+#bigbiastab = merge(bigbiastab, true_oe_df, by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
 
 names(bigbiastab)
 
@@ -95,7 +122,7 @@ ggplot(bigbiastab %>% filter(concordance == 0),
   geom_line(aes(y = true_y0), colour = 'black') + 
   #geom_ribbon(aes(x = g, ymin = de_haj_ana_lb, ymax = de_haj_ana_ub), alpha=0.25) + 
   facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(here('figures', 'march01meeting', 'diffusiony0_truth.png'), width = 6, height = 6)
+ggsave(here('figures', 'figloc2', 'diffusiony0_truth.png'), width = 6, height = 6)
 
 #plot y1
 ggplot(bigbiastab %>% filter(concordance == 0),
@@ -104,7 +131,7 @@ ggplot(bigbiastab %>% filter(concordance == 0),
   geom_line(aes(y = true_y1), colour = 'black') + 
   #geom_ribbon(aes(x = g, ymin = de_haj_ana_lb, ymax = de_haj_ana_ub), alpha=0.25) + 
   facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(here('figures', 'march01meeting', 'diffusiony1_truth.png'), width = 6, height = 6)
+ggsave(here('figures', 'figloc2', 'diffusiony1_truth.png'), width = 6, height = 6)
 
 #plot direct effect
 ggplot(bigbiastab,
@@ -124,16 +151,35 @@ ggplot(bigbiastab %>%
   facet_wrap(~concordance+gamma_ind+pdiff)
 ggsave(paste0(fig_loc, '/decoverage.png'), width = 6, height = 6)
 
-
-
+plot_df = make_ms_figtab(bigbiastab, effect = 'OE', diffusion = T)
+fig2df = plot_df$fig2df
 #plot overall effect
-ggplot(bigbiastab,
-       aes(x = g, y = oe_haj, fill = concordance, colour = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_oe),colour = 'black') + 
-  geom_ribbon(aes(x = g, ymin = oe_ht_ana_lb, ymax = oe_ht_ana_ub), alpha=0.25) + 
-  facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(paste0(fig_loc, '/diffusionoe.png'), width = 6, height = 6)
+ggplot(fig2df,
+       aes(x = g, y = oe_haj)) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 12),
+        text = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        legend.title = element_blank(),
+        legend.position = 'bottom',
+        panel.spacing = unit(1.4, "lines")) +
+  geom_point(colour = '#00BFC4') +
+  geom_line(aes(y = true_oe)) + 
+  #geom_line(true_oe_df, aes(x = g, y = true_oe)) + 
+  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
+              alpha = 0.2,fill = '#00BFC4', colour = rgb(0,0,0,0)) + 
+  facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
+  xlab(TeX(r'(\gamma)')) + ylab('Overall Effect (Hajek Estimator)')
+
+ggplot(true_oe_df, aes(x = g, y = true_oe)) + 
+  facet_grid(rows = vars(gamma_ind, concordance), cols = vars(pdiff)) +
+  geom_line() + 
+  geom_point(data = fig2df, aes(x = g, y = oe_haj))
+
+
+
+
+ggsave(paste0(fig_loc, '/diffusionoe.png'), width = 8, height = 6)
 
 #oe coverage
 ggplot(bigbiastab %>% 

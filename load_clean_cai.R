@@ -38,13 +38,13 @@ cai = merge(cai, test, by = 'id', all.x = T)
 df = cai %>%
   mutate(trt = ifelse(intensive == 1 & delay == 0, 1, 0),
          outcome = (takeup_survey),
-         #risk_averse = as.vector(scale(risk_averse)),
-         #disaster_prob = as.vector(scale(disaster_prob)),
-         #rice_inc = as.vector(scale(rice_inc)), #rice as pct of income
-         #disaster_loss = as.vector(scale(disaster_loss)),
-         #age = as.vector(scale(age)),
-         #ricearea_2010 = as.vector(scale(ricearea_2010)),
-         understanding = round(understanding, 2),
+         risk_averse = (scale(risk_averse)),
+         disaster_prob = (scale(disaster_prob)),
+         rice_inc = (scale(rice_inc)), #rice as pct of income
+         disaster_loss = (scale(disaster_loss)),
+         age = (scale(age)),
+         ricearea_2010 = (scale(ricearea_2010)),
+         understanding = scale(understanding),
          cluster = as.numeric(factor((village))),
          neigh = cluster) %>%
   group_by(neigh) %>%

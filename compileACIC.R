@@ -1,8 +1,8 @@
 #compile big sim results
 library(tidyverse)
-setwd("/gpfs/ysm/project/forastiere/sgd37/cai")
-source('scripts/compile_helper_funcs.R')
-fig_loc = "~/project/cai/figures/meet2023apr27"
+setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
+source('interference/compile_helper_funcs.R')
+fig_loc = "~/project/cai/figures/ms_figs_bivar_one"
 
 library(latex2exp)
 
@@ -32,7 +32,7 @@ beta_1 = 3
 #setwd("~/project/cai/florence_g3_3")
 #powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
 
-setwd("~/project/cai/multidim_gamma_march5")
+setwd("~/project/cai/ms_stat_test_de_july3_univariate")
 
 
 alliters = list.files()
@@ -76,27 +76,37 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
 #######################################
 # POWER TESTING FOR FLAT OE ###########
 #######################################
-source('~/project/cai/scripts/oe_stattest.R')
+source('~/project/cai/interference/oe_stattest.R')
 
 #get counts
 table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
-
+sigresults = c()
 empty = matrix(nrow = length(alliters), ncol = 3)
 ind = 1
+
+#for each set of parameters
 for (pset in 1:length(parmlist)){
   iters = alliters[str_detect(alliters, parmlist[pset])]
+  
+  #for each simulation
   for (i in 1:length(iters)){
     load(iters[i])
     if(is.na(test$oe[1,1])){next}
+    
+    #run sig test for that simulation
     testresult = oe_sigtest(test$oe, test$oe_cov)
+    #testresult_ie1 = oe_sigtest(test$ie1, test$ie1_cov)
+    testresult_de = oe_sigtest(test$direct, test$direct_cov)
+    
     sigresults = append(sigresults, testresult$accept)
-    maxlist = append(maxlist, testresult$diff)
+    #maxlist = append(maxlist, testresult$diff)
     empty[ind,1] = parmlist[pset]
     empty[ind,2] = testresult$accept #is sig?
     empty[ind,3] = testresult$diff #max difference
     ind = ind + 1
   }
 }
+
 empty = data.frame(empty)
 names(empty) = c('parms', 'TF', 'teststat')
 
@@ -105,6 +115,8 @@ summary_tab = data.frame(table(empty$parms, empty$TF)) %>%
   mutate(total = `FALSE` + `TRUE`,
          acc_rate =  `TRUE` / total,
          rej_rate = `FALSE` / total)
+save(summary_tab, file = paste0(fig_loc, '/univar_power.RData') )
+
 
 #########
 
@@ -120,7 +132,7 @@ for (parms in 1:length(parmlist)){
   concordance =   str_sub(ugly_parm[[1]][4], start = 1, end =-7 )
   b3 = ugly_parm[[1]][2]
   b4 = ugly_parm[[1]][3]
-  if(!(b4 %in% c(0,1))){next}
+  #if(!(b4 %in% c(0,1))){next}
   #if(!(concordance %in% 0)){next}
   estimates = get_means(parms, e.names)
   for (i in 1:length(e.names)){
@@ -200,8 +212,8 @@ og = bigbiastab
 #bigbiastab = og
 
 #pick a for analytical variance, b for bootstrapped variance
-#bigbiastab = pick_var('b', bigbiastab)
-bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', 
+bigbiastab = pick_var('a', bigbiastab)
+bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', #removes a few dups
                                    (true_oe == 0 | g !='0'))
 
 #######################################################
@@ -446,9 +458,15 @@ testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe))
 ##########################################################
 # EFFECT PLOTS FOR MS 
 ##########################################################
-
+theme_set(theme_minimal()+
+            theme(strip.text = element_text(size = 12),
+                  text = element_text(size = 12),
+                  axis.text = element_text(size = 12),
+                  legend.title = element_blank(),
+                  legend.position = 'bottom',
+                  panel.spacing = unit(1.4, "lines")))
 for(i in c('DE', 'IE0', 'IE1', 'OE')){
-  #i = 'IE1'
+  #i = 'OE'
   plot_df = make_ms_figtab(bigbiastab, effect = i)
   fig2df = plot_df$fig2df
   #ylabel = plot_df$ylab
@@ -459,28 +477,52 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   if(i == 'IE1'){fig2df$true = fig2df$true_ie1; fig2df$est = fig2df$ie1_haj; ylab = 'Indirect Effect (1)'}
   if(i == 'OE'){fig2df$true = fig2df$true_oe; fig2df$est = fig2df$oe_haj; ylab = 'Overall Effect'}
   
-  
   fig2df = fig2df %>% 
     filter(Conc == 'X1,X2 Uncorr' & gamma_ind == 'Target X1' | 
-             Conc == 'X1,X2 Corr' & gamma_ind == 'Target X2' |
-             Conc == 'X1,X2 Uncorr' & gamma_ind == 'Target X2') 
+           Conc == 'X1,X2 Corr' & gamma_ind == 'Target X2' |
+           Conc == 'X1,X2 Uncorr' & gamma_ind == 'Target X2') 
+  
+  #EFFECT PLOT
   ggplot(fig2df, aes(x = g, y = est))+#, #color = name, shape = name)) + 
-    theme_minimal() +
     geom_point(colour = '#00BFC4') +
     geom_line(aes(y = true)) + 
-    #scale_shape_manual(values=c(1)) +
-    theme(strip.text = element_text(size = 12),
-          text = element_text(size = 12),
-          axis.text = element_text(size = 12),
-          legend.title = element_blank(),
-          legend.position = 'bottom',
-          panel.spacing = unit(1.4, "lines")) +
     geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
                 alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
     facet_grid(rows = vars(gamma_ind, Conc), cols = vars(Interference)) + 
     xlab(TeX(r'(\gamma)')) + 
-    ylab(ylabel) #+ ylim(-.042,.042)
-  ggsave(paste0(fig_loc, '/', effect, '_modelsim_results.png'), width = 9, height = 6)
+    ylab(effect) #+ ylim(-.042,.042)
+  ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_results.png'), width = 9, height = 6)
+  
+  #COVERAGE PLOT
+  colname_boot = paste0(str_to_lower(i), '_bootcoverage_haj')
+  colname_ana =paste0(str_to_lower(i), '_anacoverage_haj')
+  
+  covdf = fig2df %>% 
+    pivot_longer(c(colname_boot,colname_ana)) %>% 
+    mutate(name = case_when(name == colname_boot ~ 'bootstrap',
+                            name == colname_ana ~ 'analytical'))
+  
+  ggplot(covdf, aes(x = g, y = value, colour = name)) + 
+    geom_point(alpha = 0.5) + 
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(Interference)) + 
+    #ggtitle('Coverage of 95% Confidence Intervals') +
+    ylab('coverage') + 
+    xlab(TeX(r'(\gamma)')) + 
+    geom_hline(yintercept = 0.95)
+  ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_coverage.png'), width = 9, height = 6)
+  
+  #BIAS PLOT
+  colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
+  fig2df$bias = fig2df[,colname_bias]
+  ggplot(fig2df, aes(x = g, y = bias)) + 
+    geom_point(alpha = 0.5) + 
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(Interference)) + 
+    #ggtitle('Coverage of 95% Confidence Intervals') +
+    ylab('bias') + 
+    xlab(TeX(r'(\gamma)')) + 
+    geom_hline(yintercept = 0)
+  ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_bias.png'), width = 9, height = 6)
+  
 }
 
 

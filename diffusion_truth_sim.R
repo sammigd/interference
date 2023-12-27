@@ -1,4 +1,5 @@
 library(here)
+library(tidyverse)
 #new diffusion truth simulation
 gl = seq(from = -.5, to = .5, length.out = 33)
 ngl = rep(0, 33)
@@ -28,13 +29,13 @@ c = 0
 
 for(concor in concors){
   c = c+1
-  print(c)
+  print(paste("c = ", c))
   d = 0
 for(diffusion_p in diffusion_ps){
   d = d+1
-  print(d)
+  print(paste("d = ", d))
 for(sim in 1:n_sim_x2){
-  if(sim %/% 100){print(sim)}
+  if(sim %/% 100){print(paste('sim#', sim))}
   if(concor == 0){X2 = rbinom(clust_size,1, x2_prev)}
   if(concor == 0.65){
     kappa = 0.25
@@ -77,7 +78,7 @@ for(sim in 1:n_sim_x2){
 }
 }
 }
-#save(Y0_truth, file = here('Y0_truth_sim_concordance0.Rsave'))
+save(Y0_truth, file = here('Y0_truth_sim_concordance0.Rsave'))
 #load(here('Y0_truth_sim_concordance0.Rsave'))
 hist(apply(Y0_truth[1, 1, , , 60], 1, mean))
 length(apply(Y0_truth[1, 1, , , 60], 2, mean))
@@ -103,7 +104,7 @@ Y0_truth_bar$true_ie1 = 0
 save(Y0_truth_bar, file = here('Y0_truth_sim_df.Rsave'))
 
 
-save.image('simtruthwkspc.Rsave')
+save.image(here('simtruthwkspc.Rsave'))
 
-load(here('simtruthwkspc.Rsave'))
-load('/gpfs/ysm/project/forastiere/sgd37/cai/wkspcfeb28.Rsave')
+#load(here('simtruthwkspc.Rsave'))
+#load('/gpfs/ysm/project/forastiere/sgd37/cai/wkspcfeb28.Rsave')

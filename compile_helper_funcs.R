@@ -1,12 +1,11 @@
 #calc means over 600 simulations for each scenario
-get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion = F, truth_use = NULL){
-  #which_iter = 1
+get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F, truth_use = NULL){
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
-  
+  print(ngam)
   for(i in e.names){
     assign(i, array(NA, dim = c(ngam, length(iters)), dimnames(list('gammas', 'iters'))))
   }
-  
+
   #EXTRACT ALL THE ESTIMATES FROM THE ITERATIONS
   for (i in 1:length(iters)){
     #i = 1
@@ -18,6 +17,8 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
     # POTENTIAL OUTCOMES ##########
     ###############################
     #HT
+    #print(str(y0_ht))
+    #print(str(test$unadj))
     y0_ht[,i] = test$unadj[1,]
     y1_ht[,i] = test$unadj[2,]
     
@@ -108,6 +109,12 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
       true_ie0[,i] = test$truth$ie[1,,ngam]
       true_ie1[,i] = test$truth$ie[2,,ngam]
       true_oe[,i] = test$truth$oe[,ngam]
+      
+      if((beta4 == 0 | beta4 == '0') & beta5 == 0){
+        true_oe[,i] = 0
+        true_ie1[,i] = 0
+        true_ie0[,i] = 0
+      }
     }else{
       #true_de[,i] = truth_use$true_de#test$truth$de
       true_y0[,i] = NA#truth_use$true_y0#test$truth$y0
@@ -119,12 +126,8 @@ get_means = function(which_iter, e.names, beta4 = ugly_parm[[1]][3], diffusion =
       true_oe[,i] = test$truth$oe[,67] #NA#truth_use$true_oe #NA
       
     }
+
     
-    if(beta4 == 0){
-      true_oe[,i] = 0
-      true_ie1[,i] = 0
-      true_ie0[,i] = 0
-    }
     
     ###############################
     # COVERAGE ####################
@@ -239,8 +242,8 @@ pick_var <- function(v = c('a', 'b'), bigbiastab){
              ie1_haj_ana_lb = ie1_haj - 1.96*sqrt(indirect1_bootvar_haj),
              ie1_haj_ana_ub = ie1_haj + 1.96*sqrt(indirect1_bootvar_haj),
              oe_haj_ana_lb = oe_haj - 1.96*sqrt(oe_bootvar_haj),
-             oe_haj_ana_ub = oe_haj + 1.96*sqrt(oe_bootvar_haj)) %>%
-      filter(gamma_ind != 'X3')
+             oe_haj_ana_ub = oe_haj + 1.96*sqrt(oe_bootvar_haj)) #%>%
+      #filter(gamma_ind != 'X3')
   } else{
     bigbiastab = bigbiastab %>% 
       mutate(de_ht_ana_lb = de_ht - 1.96*sqrt(de_analyticalvar_ht),
@@ -258,8 +261,8 @@ pick_var <- function(v = c('a', 'b'), bigbiastab){
              ie1_haj_ana_lb = ie1_haj - 1.96*sqrt(indirect1_analyticalvar_haj),
              ie1_haj_ana_ub = ie1_haj + 1.96*sqrt(indirect1_analyticalvar_haj),
              oe_haj_ana_lb = oe_haj - 1.96*sqrt(oe_analyticalvar_haj),
-             oe_haj_ana_ub = oe_haj + 1.96*sqrt(oe_analyticalvar_haj)) %>%
-      filter(gamma_ind != 'X3')
+             oe_haj_ana_ub = oe_haj + 1.96*sqrt(oe_analyticalvar_haj)) #%>%
+      #filter(gamma_ind != 'X3')
   }
   
   return(bigbiastab)
@@ -278,20 +281,30 @@ make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
   fig2df = bigbiastab %>%
     mutate(lb = lbx, ub = ubx)
   
+  a = 'No Interference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=0)'
+  b = 'Homogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=1; \U03B2' %p% subsc('4') %p% '=0)'
+  c = 'Moderate \nHeterogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=1)'
+  d = 'Strong \nHeterogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=2)'
+
+  e = 'No Interference\n (\U03B2' %p% subsc('5') %p% '=0)'
+  f = 'Heterogeneous Interference\n (\U03B2' %p% subsc('5') %p% '=1)'
+  
   if(!diffusion){
     fig2df = fig2df %>% 
-      filter(str_detect(label, 'beta3 = 0') | 
-                (str_detect(label, 'beta3 = 1') & 
-                   str_detect(label, 'beta4 = 0,'))) %>%#& concordance != "0.65") %>%
-      mutate(Interference = case_when(str_detect(label, 'beta4 = 0,') &  str_detect(label, 'beta3 = 0,')~ 'No Interference',
-                                      str_detect(label, 'beta3 = 1') ~ 'Homogeneous \nInterference',
-                                      str_detect(label, 'beta4 = 0.5') ~ 'Moderate \nHeterogeneous \nInterference',
-                                      str_detect(label, 'beta4 = 1') ~ 'Strong \nHeterogeneous \nInterference')) %>%  
+      filter(b3 == 0  | 
+             b3 == 1 & b4 == 0) %>%
+      mutate(Interference = case_when(b3 == 0 & b4 == 0  ~ a,
+                                      b3 == 1 & b4 == 0  ~ b,
+                                      b3 == 0 &  b4 == 1 ~ c,
+                                      b3 == 0 & b4 == 2  ~ d)) %>%  
       filter(!is.na(Interference)) %>%
-      mutate(Interference = factor(Interference, levels = c('No Interference',
-                                                            'Homogeneous \nInterference',
-                                                            'Moderate \nHeterogeneous \nInterference',
-                                                            'Strong \nHeterogeneous \nInterference')))
+      mutate(Interference = factor(Interference, levels = c(a,
+                                                            b,
+                                                            c,
+                                                            d))) %>%
+      mutate(InterferenceX2 = ifelse(b5 == 0, e, f),
+             InterferenceX2 = factor(InterferenceX2, levels = c(e, 
+                                                               f)))
       
   }
   if(diffusion){
@@ -299,14 +312,16 @@ make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
       mutate(pdiff_long = paste('P(diffusion) = ', pdiff))
   }
   #print(table(fig2df$concordance))
+  a = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')=0'
+  b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')!=0'
   fig2df = fig2df %>%
-    mutate(Conc = case_when(concordance == '0' | concordance == 0  ~ 'X1,X2 Uncorr',
-                            concordance == 0.65 | concordance == '0.8' | concordance == '0.65' ~ 'X1,X2 Corr')) %>%
-    mutate(Conc = factor(Conc, levels = c('X1,X2 Uncorr', 'X1,X2 Corr'))) %>%#,
+    mutate(Conc = case_when(concordance == '0' | concordance == 0 | concordance == '0.RSave' ~ a,
+                            concordance == 0.65 | concordance == '0.8' | concordance == '0.65' | concordance == '0.65.RSave' ~ b)) %>%
+    mutate(Conc = factor(Conc, levels = c(a,b))) %>%#,
            #name = ifelse(str_detect(name, 'haj'), paste0('Hajek ', effect), paste0('True ', effect)),
            #name = factor(name, levels = c( paste0('True ', effect),paste0('Hajek ', effect)))) %>%
-    mutate(gamma_ind = case_when(gamma_ind == 'X1' ~ 'Target X1',
-                                 gamma_ind == 'X2' ~ 'Target X2'))
+    mutate(gamma_ind = case_when(gamma_ind == 'X1' ~ 'Target X' %p% supsc('(1)'),
+                                 gamma_ind == 'X2' ~ 'Target X' %p% supsc('(2)')))
   return(list(fig2df = fig2df, effect = effect))
 }
 

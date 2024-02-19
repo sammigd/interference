@@ -1,10 +1,13 @@
 library(stringr)
 library(latex2exp)
 library(tidyverse)
-
+library(reporter)
 
 #load the helper functions
 source('/home/sgd37/project/cai/interference/compile_helper_funcs.R')
+
+#load the truth
+load('simtruthwkspc.Rsave')
 
 #set the output folder
 fig_loc = "~/project/cai/figures/nov16_laura"
@@ -28,10 +31,14 @@ ngl = rep(0, 33)
 gamma_list = rbind(rep(0, 33),
                    c(ngl, gl),
                    c(gl, ngl))
-gamma_list = cbind(gamma_list, c(0,0,0))
+gamma_list = cbind(gamma_list, c(0,0, 0))
 gamma_numer = gamma_list
 ngam = ncol(gamma_numer)
 diffusion = T
+
+b5 = NULL
+beta5 = NULL
+beta4 = NULL
 
 e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'direct_haj', 'direct_analyticalvar_haj', 'direct_bootvar_haj',
@@ -49,6 +56,8 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'ie1_anacoverage_ht', 'ie1_anacoverage_haj', 'ie1_bootcoverage_ht', 'ie1_bootcoverage_haj',
             'y0_anacoverage_ht', 'y1_anacoverage_ht', 'y_ht_covar', 'y0_bootcoverage_ht', 'y1_bootcoverage_ht', 'sum_wts0', 'sum_wts1'
 )
+
+#load('/gpfs/gibbs/project/forastiere/sgd37/cai/simtruthwkspc.Rsave')
 
 bigbiastab = array(NA, dim = c(0, 30))
 #compare bias for all the different parameters
@@ -69,7 +78,7 @@ for (parms in 1:length(parmlist)){
   for (i in 1:length(e.names)){
     assign(e.names[i], estimates[[i]])
   }
-  biastab = data.frame(#g = gamma_list[2,]) %>% #
+  biastab = data.frame(#g = gamma_list[2,], #) %>% #
     g = c(rep(gamma_list[3,1:floor(ngam/2)], 2), 0),
     gamma_ind = c(rep('X2', 33), rep('X1', 33), 'X1')) %>% 
     mutate(#True parameter values

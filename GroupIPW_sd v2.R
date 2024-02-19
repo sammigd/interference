@@ -99,6 +99,10 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
       #nn = 1
       # Calculating the random effect that gives alpha.
       Xi <- dta[neigh_ind[[nn]], cov_cols]
+      #print('str xi')
+      #print(str(Xi))
+      #print('gammas')
+      #print(curr_gamma_numer)
       lin_pred <- cbind(1, as.matrix(Xi)) %*% curr_gamma_numer
       re_alpha <- FromAlphaToRE(alpha = alpha, lin_pred = lin_pred,
                                   alpha_re_bound = alpha_re_bound)

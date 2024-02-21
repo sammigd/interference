@@ -21,7 +21,7 @@ get_true_diffusion <- function(gamma_numer,
   x1_adj_res_mat = array(NA, dim = c(ncol(trt_vecs), ncol(gamma_numer) - 33, clust_size))
   adj_Ybar = array(NA, dim = c(ncol(trt_vecs), ncol(gamma_numer)-33,3))
   
-  
+
   #E[Y_i(a)]
   Y_mat = array(NA, dim = c(ncol(trt_vecs), 3))
   dimnames(Y_mat) <- list(trt_vecs = 1:ncol(trt_vecs), y = c('Y', 'Y0', 'Y1'))
@@ -36,6 +36,9 @@ get_true_diffusion <- function(gamma_numer,
   
   #FIXED X1 FOR EVERYONE: ALTER/CENTER INDICATOR
   x1 = rep(0, clust_size); x1[1] = 1
+  print(x1)
+  
+  print('*')
   
   #LOOP OVER POSSIBLE TREATMENT VECTORS
   for (a in 1:ncol(trt_vecs)){
@@ -105,9 +108,13 @@ get_true_diffusion <- function(gamma_numer,
     #MULTIPLY P(A_i-j | X_i-j) by E[Yij]
     
     #LOOP OVER POSSIBLE X2 VECTORS
+  print('**')
+  print(ncol(trt_vecs))
     for (x in 1:ncol(trt_vecs)){
+      print(x)
       #x = 1
       xx = trt_vecs[,x]
+      print(xx)
       
       #CALCULATE P(X2|X1) - ONLY NEEDED FOR X2 INTERVENTION
       #p(x2|x1)
@@ -158,7 +165,7 @@ get_true_diffusion <- function(gamma_numer,
           }
       }
     }
-  }
+  
   ind_p_a_x1 = apply(ind_res_mat, c(1,3,4), sum, na.rm =T) #this gives a number for each individual in each treatment vector for each gamma
   #ind_p_a_x1 = ind_res_mat[,1,,]
   # ind_p_a_x1 = data.frame(fix_Aij = c(rep(0, 4), rep(1,4)),
@@ -240,5 +247,7 @@ get_true_diffusion <- function(gamma_numer,
   
   return(list(de = de, ie = ie, oe = oe, y0 = wtd_y0, y1 = wtd_y1))
 }
-#results = get_true_diffusion(gamma_numer = gamma_numer, x2_prev = 0.2, kappa = 0.25, trt_vecs = trt_vecs)
+
+trt_vecs = t(expand.grid(0:1, 0:1, 0:1, 0:1, 0:1))
+results = get_true_diffusion(gamma_numer = gamma_numer, x2_prev = 0.2, kappa = 0.25, trt_vecs = trt_vecs)
 

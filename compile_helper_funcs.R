@@ -1,7 +1,9 @@
 #calc means over 600 simulations for each scenario
 get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F, truth_use = NULL){
+  #which_iter = 1
+  
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
-  print(ngam)
+  #print(ngam)
   for(i in e.names){
     assign(i, array(NA, dim = c(ngam, length(iters)), dimnames(list('gammas', 'iters'))))
   }
@@ -117,13 +119,14 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
       }
     }else{
       #true_de[,i] = truth_use$true_de#test$truth$de
-      true_y0[,i] = NA#truth_use$true_y0#test$truth$y0
-      true_y1[,i] = NA#truth_use$true_y1#test$truth$y1
-      true_de[,i] = NA#truth_use$true_y1 - truth_use$true_y0
+      print(truth_use$true_y0)
+      true_y0[,i] = truth_use$true_y0#test$truth$y0
+      true_y1[,i] = truth_use$true_y1#test$truth$y1
+      true_de[,i] = truth_use$true_y1 - truth_use$true_y0
       
-      true_ie0[,i] = NA#truth_use$true_ie0
-      true_ie1[,i] = NA#truth_use$true_ie1
-      true_oe[,i] = test$truth$oe[,67] #NA#truth_use$true_oe #NA
+      true_ie0[,i] = truth_use$true_ie0
+      true_ie1[,i] = truth_use$true_ie1
+      true_oe[,i] = NA #test$truth$oe[,67] #NA#truth_use$true_oe #NA
       
     }
 

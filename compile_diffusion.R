@@ -7,7 +7,8 @@ library(reporter)
 source('/home/sgd37/project/cai/interference/compile_helper_funcs.R')
 
 #load the truth
-load('simtruthwkspc.Rsave')
+getwd()
+load(here('simtruthwkspc.Rsave'))
 
 #set the output folder
 fig_loc = "~/project/cai/figures/nov16_laura"
@@ -83,8 +84,8 @@ for (parms in 1:length(parmlist)){
     gamma_ind = c(rep('X2', 33), rep('X1', 33), 'X1')) %>% 
     mutate(#True parameter values
            true_oe = true_oe, 
-           #true_ie1 = true_ie1, true_ie0 = true_ie0, 
-           #true_y0 = true_y0, true_y1 = true_y1, true_de = 0,#(true_y1 - true_y0),
+           true_ie1 = true_ie1, true_ie0 = true_ie0, 
+           true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
            #estimated parameter values
            de_ht = direct_ht, de_haj = direct_haj,
            ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
@@ -119,7 +120,8 @@ for (parms in 1:length(parmlist)){
 
 bigbiastab = pick_var('a', bigbiastab) #this makes CIs
 
-#bigbiastab = merge(bigbiastab, Y0_truth_bar, by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
+#bigbiastab = merge(bigbiastab, Y0_truth_bar, 
+#                   by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
 #bigbiastab = merge(bigbiastab, true_oe_df, by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
 
 names(bigbiastab)
@@ -147,7 +149,7 @@ ggplot(bigbiastab,
        aes(x = g, y = de_ht, colour = concordance, fill = concordance)) +
   geom_point() + 
   geom_line(aes(y = true_de), colour = 'black') + 
-  geom_ribbon(aes(x = g, ymin = de_ht_ana_lb, ymax = de_ht_ana_ub), alpha=0.25) + 
+  #geom_ribbon(aes(x = g, ymin = de_ht_ana_lb, ymax = de_ht_ana_ub), alpha=0.25) + 
   facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
 ggsave(paste0(fig_loc, '/diffusionde.png'), width = 6, height = 6)
 

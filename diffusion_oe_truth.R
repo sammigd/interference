@@ -1,3 +1,5 @@
+#NOT IT
+
 setwd("~/project/cai/diffusion_2023nov16")
 
 

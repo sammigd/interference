@@ -57,15 +57,36 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           mini = mini %>%
             mutate(n_untrt_alter = sum(Aij==0 & X1ij==0 & is_center_trted == 1))# %>%
           #print(mini)
-          mini = mini %>%
-            mutate(pot_out = case_when(Aij == 1 ~ 1, #treated node
-                                       #untrt alter where center IS NOT treated
-                                       Aij == 0 & X1ij == 0 & is_center_trted == 0 ~ 0,
-                                       #untreated center - #max of a coin flip for each treated alter in the cluster
-                                       Aij == 0 & X1ij == 1 ~ as.numeric(max(rbinom(Tij, 1, diffusion_p))), 
-                                       #untrt alter where center IS treated
-                                       Aij == 0 & X1ij == 0 & is_center_trted == 1 ~ as.numeric(rbinom(n_untrt_alter, 1, diffusion_p)))) #change the first 1 to number of rows
+         
+          if(F){
+            mini = mini %>%
+              mutate(pot_out = case_when(Aij == 1 ~ 1, #treated node
+                                         #untrt alter where center IS NOT treated
+                                         Aij == 0 & X1ij == 0 & is_center_trted == 0 ~ 0,
+                                         #untreated center - #max of a coin flip for each treated alter in the cluster
+                                         Aij == 0 & X1ij == 1 ~ as.numeric(max(rbinom(Tij, 1, diffusion_p))), 
+                                         #untrt alter where center IS treated
+                                         Aij == 0 & X1ij == 0 & is_center_trted == 1 ~ as.numeric(rbinom(n_untrt_alter, 1, diffusion_p)))) #change the first 1 to number of rows
+          }
           
+          #mini$pot_outcome = ifelse(mini$Aij == 1, 1, #treated node
+          #                          ifelse(mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 0, 0, #untrt alter where center IS NOT treated
+          #                                 ifelse()))
+          
+          #treated node
+          print('here is the new part')
+          print(mini$Tij)
+          mini$pot_out[mini$Aij == 1] <- 1
+          
+          #untrt alter where center IS NOT treated
+          mini$pot_out[mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 0] <- 0
+          
+          #untreated center - #max of a coin flip for each treated alter in the cluster
+          mini$pot_out[mini$Aij == 0 & mini$X1ij == 1] <- as.numeric(max(rbinom(mini$Tij[1], 1, diffusion_p)))
+          
+          #untrt alter where center IS treated
+          mini$pot_out[mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 1] <- as.numeric(rbinom(mini$n_untrt_alter, 1, diffusion_p))
+          print('the new part is over')
         }
         #print('*')
 

@@ -27,7 +27,8 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
     #HAJ
     y0_haj[,i] = test$haj[1,]
     y1_haj[,i] = test$haj[2,]
-    
+    y_haj[,i] = test$oe_haj
+
     #HT Y0 VAR
     y0_ht_var[,i] = test$ht_yhat_var[1,1,]
     y0_ht_bootvar[,i] = test$ypop_bootvar[1,]
@@ -119,14 +120,17 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
       }
     }else{
       #true_de[,i] = truth_use$true_de#test$truth$de
-      print(truth_use$true_y0)
+      #print(truth_use$true_y0)
+      #print(str(true_y0[,i]))
+      #print(str(truth_use$true_y0))
       true_y0[,i] = truth_use$true_y0#test$truth$y0
       true_y1[,i] = truth_use$true_y1#test$truth$y1
       true_de[,i] = truth_use$true_y1 - truth_use$true_y0
       
       true_ie0[,i] = truth_use$true_ie0
       true_ie1[,i] = truth_use$true_ie1
-      true_oe[,i] = NA #test$truth$oe[,67] #NA#truth_use$true_oe #NA
+      true_oe[,i] = truth_use$true_oe #test$truth$oe[,67] #NA#truth_use$true_oe #NA
+      true_y[,i] = truth_use$true_y
       
     }
 
@@ -186,8 +190,8 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
                    indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
                    oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
                    oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-                   true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
-                   y0_ht, y1_ht, y0_haj, y1_haj,
+                   true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1, true_y,
+                   y0_ht, y1_ht, y0_haj, y1_haj, y_haj,
                    y0_ht_var, y1_ht_var, y0_ht_bootvar, y1_ht_bootvar, y0_ht_mcvar, y1_ht_mcvar, 
                    oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
                    de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
@@ -213,8 +217,8 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
               indirect1_haj, indirect1_analyticalvar_haj, indirect1_bootvar_haj,
               oe_haj, oe_analyticalvar_haj, oe_bootvar_haj,
               oe_ht, oe_analyticalvar_ht, oe_bootvar_ht,
-              true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1,
-              y0_ht, y1_ht, y0_haj, y1_haj,
+              true_ie0, true_ie1, true_oe, true_de, true_y0, true_y1, true_y,
+              y0_ht, y1_ht, y0_haj, y1_haj, y_haj,
               y0_ht_var, y1_ht_var, y0_ht_bootvar, y1_ht_bootvar, y0_ht_mcvar, y1_ht_mcvar, 
               oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj,
               de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj,
@@ -316,7 +320,7 @@ make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
   }
   #print(table(fig2df$concordance))
   a = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')=0'
-  b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')!=0'
+  b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')>0'
   fig2df = fig2df %>%
     mutate(Conc = case_when(concordance == '0' | concordance == 0 | concordance == '0.RSave' ~ a,
                             concordance == 0.65 | concordance == '0.8' | concordance == '0.65' | concordance == '0.65.RSave' ~ b)) %>%

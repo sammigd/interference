@@ -2,6 +2,7 @@ library(stringr)
 library(latex2exp)
 library(tidyverse)
 library(reporter)
+library(here)
 
 #load the helper functions
 source('/home/sgd37/project/cai/interference/compile_helper_funcs.R')
@@ -11,14 +12,24 @@ getwd()
 load(here('simtruthwkspc.Rsave'))
 
 #set the output folder
-fig_loc = "~/project/cai/figures/nov16_laura"
-figloc2 = 'nov16_laura'
+fig_loc = "~/project/cai/figures/ms_figs_diffusion"
+figloc2 = 'ms_figs_diffusion'
 
 #set the folder where the simulation results are
 setwd("~/project/cai/ms_diffusion_2023nov17_wtruth")
 
 #load in the diffusion truth simulation results
 #load('~/project/cai/Y0_truth_sim_df.Rsave')
+
+theme_set(theme_minimal()+
+            theme(strip.text = element_text(size = 10),
+                  text = element_text(size = 11),
+                  axis.text = element_text(size = 11),
+                  legend.title = element_blank(),
+                  legend.position = 'bottom',
+                  panel.spacing = unit(.5, "lines"),
+                  strip.background = element_rect(color = rgb(0,0,0,0))))
+
 
 
 #get the parameters
@@ -27,7 +38,7 @@ table(str_remove(alliters, word(alliters, sep = '_')))
 parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-7]
 
 
-gl = seq(from = -.2, to = .2, length.out = 33)
+gl = seq(from = -.5, to = .5, length.out = 33)
 ngl = rep(0, 33)
 gamma_list = rbind(rep(0, 33),
                    c(ngl, gl),
@@ -49,8 +60,8 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'indirect1_haj', 'indirect1_analyticalvar_haj', 'indirect1_bootvar_haj',
             'oe_haj', 'oe_analyticalvar_haj', 'oe_bootvar_haj',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
-            'true_ie0', 'true_ie1', 'true_oe', 'true_de', 'true_y0', 'true_y1',
-            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj', 'y0_ht_var', 'y1_ht_var', 'y0_ht_bootvar', 'y1_ht_bootvar', 'y0_ht_mcvar', 'y1_ht_mcvar', 
+            'true_ie0', 'true_ie1', 'true_oe', 'true_de', 'true_y0', 'true_y1', 'true_y',
+            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj','y_haj', 'y0_ht_var', 'y1_ht_var', 'y0_ht_bootvar', 'y1_ht_bootvar', 'y0_ht_mcvar', 'y1_ht_mcvar', 
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
             'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj',
             'ie0_anacoverage_ht', 'ie0_anacoverage_haj', 'ie0_bootcoverage_ht', 'ie0_bootcoverage_haj',
@@ -85,12 +96,16 @@ for (parms in 1:length(parmlist)){
     mutate(#True parameter values
            true_oe = true_oe, 
            true_ie1 = true_ie1, true_ie0 = true_ie0, 
-           true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
+           true_y0 = true_y0, true_y1 = true_y1,
+           true_y = true_y,
+           true_de = (true_y1 - true_y0),
            #estimated parameter values
            de_ht = direct_ht, de_haj = direct_haj,
            ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
            oe_ht = oe_ht, oe_haj = oe_haj,
-           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
+           y1_ht = y1_ht, y1_haj=y1_haj, 
+           y0_ht = y0_ht, y0_haj = y0_haj,
+           y_haj = y_haj,
            #bias
            #bias_de_ht = (direct_ht - beta_1), bias_de_haj = (direct_haj - beta_1),
            #bias_oe_ht = (oe_ht - true_oe), bias_oe_haj = (oe_haj - true_oe),
@@ -118,117 +133,80 @@ for (parms in 1:length(parmlist)){
   bigbiastab = rbind(bigbiastab, biastab)
 } 
 
-bigbiastab = pick_var('a', bigbiastab) #this makes CIs
-
+#bigbiastab = bigbiastab %>% 
+#  select(-true_oe, -true_de, -true_ie1, -true_ie0, -true_y0, -true_y1)
 #bigbiastab = merge(bigbiastab, Y0_truth_bar, 
 #                   by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
-#bigbiastab = merge(bigbiastab, true_oe_df, by = c('concordance', 'pdiff', 'g', 'gamma_ind'), all.x = T)
 
-names(bigbiastab)
-
-#plot y0
-ggplot(bigbiastab %>% filter(concordance == 0),
-       aes(x = g, y = y0_haj, colour = concordance, fill = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_y0), colour = 'black') + 
-  #geom_ribbon(aes(x = g, ymin = de_haj_ana_lb, ymax = de_haj_ana_ub), alpha=0.25) + 
-  facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(here('figures', 'figloc2', 'diffusiony0_truth.png'), width = 6, height = 6)
-
-#plot y1
-ggplot(bigbiastab %>% filter(concordance == 0),
-       aes(x = g, y = y1_haj, colour = concordance, fill = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_y1), colour = 'black') + 
-  #geom_ribbon(aes(x = g, ymin = de_haj_ana_lb, ymax = de_haj_ana_ub), alpha=0.25) + 
-  facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(here('figures', 'figloc2', 'diffusiony1_truth.png'), width = 6, height = 6)
-
-#plot direct effect
-ggplot(bigbiastab,
-       aes(x = g, y = de_ht, colour = concordance, fill = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_de), colour = 'black') + 
-  #geom_ribbon(aes(x = g, ymin = de_ht_ana_lb, ymax = de_ht_ana_ub), alpha=0.25) + 
-  facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(paste0(fig_loc, '/diffusionde.png'), width = 6, height = 6)
+bigbiastab = pick_var('a', bigbiastab) #this makes CIs
 
 
-ggplot(bigbiastab %>% 
-         select(g, gamma_ind, pdiff, concordance, de_anacoverage_ht, de_anacoverage_haj, de_bootcoverage_ht, de_bootcoverage_haj) %>%
-         pivot_longer(de_anacoverage_ht:de_bootcoverage_haj), 
-       aes(x = g, y = value, fill = name, colour = name)) +
-  geom_point() + 
-  facet_wrap(~concordance+gamma_ind+pdiff)
-ggsave(paste0(fig_loc, '/decoverage.png'), width = 6, height = 6)
 
-plot_df = make_ms_figtab(bigbiastab, effect = 'OE', diffusion = T)
-fig2df = plot_df$fig2df
-#plot overall effect
-ggplot(fig2df,
-       aes(x = g, y = oe_haj)) +
-  theme_minimal() +
-  theme(strip.text = element_text(size = 12),
-        text = element_text(size = 12),
-        axis.text = element_text(size = 12),
-        legend.title = element_blank(),
-        legend.position = 'bottom',
-        panel.spacing = unit(1.4, "lines")) +
-  geom_point(colour = '#00BFC4') +
-  geom_line(aes(y = true_oe)) + 
-  #geom_line(true_oe_df, aes(x = g, y = true_oe)) + 
-  geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
-              alpha = 0.2,fill = '#00BFC4', colour = rgb(0,0,0,0)) + 
-  facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
-  xlab(TeX(r'(\gamma)')) + ylab('Overall Effect (Hajek Estimator)')
+for(i in  c('DE', 'IE0', 'IE1', 'OE')){
 
-ggplot(true_oe_df, aes(x = g, y = true_oe)) + 
-  facet_grid(rows = vars(gamma_ind, concordance), cols = vars(pdiff)) +
-  geom_line() + 
-  geom_point(data = fig2df, aes(x = g, y = oe_haj))
+  plot_df = make_ms_figtab(bigbiastab, effect = i, diffusion = T)
+  fig2df = plot_df$fig2df
+  effect = plot_df$effect
+  
+  
+  if(i == 'DE'){fig2df$true = fig2df$true_de; fig2df$est = fig2df$de_haj; ylab = 'Direct Effect'}
+  if(i == 'IE0'){fig2df$true = fig2df$true_ie0; fig2df$est = fig2df$ie0_haj; ylab = 'Indirect Effect (0)'}
+  if(i == 'IE1'){fig2df$true = fig2df$true_ie1; fig2df$est = fig2df$ie1_haj; ylab = 'Indirect Effect (1)'}
+  if(i == 'OE'){fig2df$true = fig2df$true_oe; fig2df$est = fig2df$oe_haj; ylab = 'Overall Effect'}
+  
+  #plot overall effect
+  ggplot(fig2df,
+         aes(x = g, y = est)) +
+    geom_point(colour = '#00BFC4') +
+    geom_line(aes(y = true)) + 
+    theme(panel.spacing = unit(1.5, "lines")) + 
+    geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
+                alpha = 0.2,fill = '#00BFC4', colour = rgb(0,0,0,0)) + 
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
+    xlab(TeX(r'(\gamma)')) + ylab(i)
+  ggsave(paste0(fig_loc, '/', effect, '_diffusion_results.png'), width = 9, height = 6)
+  
+  #plot coverage
+  colname_boot = paste0(str_to_lower(i), '_bootcoverage_haj')
+  colname_ana =paste0(str_to_lower(i), '_anacoverage_haj')
+  
+  covdf = fig2df %>% 
+    pivot_longer(c(colname_boot,colname_ana)) %>% 
+    mutate(name = case_when(name == colname_boot ~ 'bootstrap',
+                            name == colname_ana ~ 'analytical'))
+  ggplot(covdf,
+         aes(x = g, y = value, colour = name)) +
+    geom_point() +
+    theme(panel.spacing = unit(1.5, "lines")) + 
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
+    xlab(TeX(r'(\gamma)')) + ylab('coverage') + 
+    geom_hline(yintercept = 0.95)
+  ggsave(paste0(fig_loc, '/', effect, '_diffusion_coverage.png'), width = 9, height = 6.5)
+  
+  #plot bias
+  fig2df$bias = fig2df$est - fig2df$true
+  
+  ggplot(fig2df, aes(x = g, y = bias)) + 
+    geom_point(alpha = 0.5) + 
+    theme(panel.spacing = unit(1.5, "lines")) + 
+    facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
+    ylab('bias') + 
+    xlab(TeX(r'(\gamma)')) + 
+    geom_hline(yintercept = 0)
+  ggsave(paste0(fig_loc, '/', effect, '_diffusion_bias.png'), width = 9, height = 6)
+  
+  
+}
 
 
 
 
-ggsave(paste0(fig_loc, '/diffusionoe.png'), width = 8, height = 6)
-
-#oe coverage
-ggplot(bigbiastab %>% 
-         select(g, gamma_ind, concordance, oe_anacoverage_ht, oe_anacoverage_haj, oe_bootcoverage_ht, oe_bootcoverage_haj) %>%
-         pivot_longer(oe_anacoverage_ht:oe_bootcoverage_haj), 
-       aes(x = g, y = value, fill = name, colour = name)) +
-  geom_point() + 
-  geom_line(aes(y = 0.95),colour = 'black') + 
-  facet_grid(cols = vars(concordance), rows = vars(gamma_ind))
-ggsave(paste0(fig_loc, '/diffusion_oe_coverage.png'), width = 6, height = 6)
 
 
-#plot ie
-ggplot(bigbiastab, 
-       aes(x = g, y = ie0_haj, colour = concordance, fill = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_ie0), colour = 'black') + 
-  geom_ribbon(aes(x = g, ymin = ie0_ht_ana_lb, ymax = ie0_ht_ana_ub), alpha=0.25) + 
-  facet_grid(rows = vars(gamma_ind), cols = vars(pdiff))
-ggsave(paste0(fig_loc, '/diffusion_ie0.png'), width = 6, height = 6)
 
 
-ggplot(bigbiastab,
-       aes(x = g, y = ie1_haj, colour = concordance, fill = concordance)) +
-  geom_point() + 
-  geom_line(aes(y = true_ie1), colour = 'black') + 
-  geom_ribbon(aes(x = g, ymin = ie1_ht_ana_lb, ymax = ie1_ht_ana_ub), alpha=0.25) + 
-  facet_grid(cols = vars(gamma_ind), rows = vars(pdiff))
-ggsave(paste0(fig_loc, '/diffusion_ie1.png'), width = 6, height = 6)
 
 
-#ie0 coverage
-ggplot(bigbiastab %>% 
-         select(g, gamma_ind, pdiff,concordance, ie0_anacoverage_ht, ie0_anacoverage_haj, ie0_bootcoverage_ht, ie0_bootcoverage_haj) %>%
-         pivot_longer(ie0_anacoverage_ht:ie0_bootcoverage_haj), 
-       aes(x = g, y = value, fill = name, colour = name)) +
-  geom_point() + 
-  facet_grid(cols = vars(concordance, pdiff), rows = vars(gamma_ind))
-ggsave(paste0(fig_loc, '/diffusion_ie0_cov.png'), width = 6, height = 6)
 
-save.image(paste0(fig_loc, 'diffusionwkspc.RSave'))
+
+

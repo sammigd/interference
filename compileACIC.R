@@ -3,9 +3,10 @@ library(tidyverse)
 library(viridis)
 library(ggh4x)
 library(reporter)
+library(xtable)
 
 
-bivar = F
+bivar = T
 setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
 source('interference/compile_helper_funcs.R')
 
@@ -132,7 +133,7 @@ for (pset in 1:length(parmlist)){
     #run sig test for that simulation
     testresult = oe_sigtest(test$oe, test$oe_cov)
     #testresult_ie1 = oe_sigtest(test$ie1, test$ie1_cov)
-    testresult_de = oe_sigtest(test$direct, test$direct_cov)
+    #testresult_de = oe_sigtest(test$direct, test$direct_cov)
     
     sigresults = append(sigresults, testresult$accept)
     #maxlist = append(maxlist, testresult$diff)
@@ -141,17 +142,40 @@ for (pset in 1:length(parmlist)){
     empty[ind,3] = testresult$diff #max difference
     ind = ind + 1
   }
+  print(pset)
+  print('is done')
+  save(empty, file = paste0(fig_loc, '/bivar_power.RData'))
 }
+
+load(file = paste0(fig_loc, '/bivar_power.RData') )
 
 empty = data.frame(empty)
 names(empty) = c('parms', 'TF', 'teststat')
+str(empty)
+teststattable = empty %>% 
+  mutate(teststat = as.numeric(teststat)) %>%
+  group_by(parms) %>% summarise(teststat = mean(teststat, na.rm = T))
 
 summary_tab = data.frame(table(empty$parms, empty$TF)) %>% 
   pivot_wider(names_from = Var2, values_from = Freq) %>%
   mutate(total = `FALSE` + `TRUE`,
          acc_rate =  `TRUE` / total,
-         rej_rate = `FALSE` / total)
+         rej_rate = `FALSE` / total)# %>%
+  #separate(Var1, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+  #mutate(b5 = substr(b5, 1,1))
 save(summary_tab, file = paste0(fig_loc, '/univar_power.RData') )
+
+power_tab = teststattable %>% 
+  merge(summary_tab, by.x = 'parms', by.y = 'Var1')  %>%
+  separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+  mutate(b5 = substr(b5, 1,1)) %>% dplyr::select(-x, -`TRUE`, -`FALSE`, -total) %>%
+  arrange(b4, b5, b3, concordance) %>%
+  mutate(Level = ifelse(b4==0 & b5==0, rej_rate, ' '),
+         Power = ifelse(b4!=0 | b5 !=0, rej_rate, ' ')) %>%
+  dplyr::select(b3, b4, b5, concordance, teststat, Level, Power)
+  
+print(xtable(power_tab, type = "latex"), file = "power_table.tex", include.rownames = F)
+
 
 
 #########
@@ -336,7 +360,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   if(i == 'OE'){fig2df$true = fig2df$true_oe; fig2df$est = fig2df$oe_haj; ylab = 'Overall Effect'}
  
   a = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')=0'
-  b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')!=0'
+  b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')>0'
   
   if(!bivar){
     fig2df = fig2df %>% 
@@ -361,7 +385,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
       scale_fill_viridis() + 
       theme(legend.title = element_text(size = 12)) + 
       labs(fill = effect)
-    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_results.png'), width = 9, height = 7)
+    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_results.png'), width = 9, height = 9)
   }else{ #univar
     ggplot(fig2df, aes(x = g, y = est))+#, #color = name, shape = name)) + 
       geom_point(colour = '#00BFC4') +
@@ -394,7 +418,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
             legend.text = element_text(angle=-90, hjust = -.05)) +
       labs(fill = '95% CI coverage')
     
-    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_coverage.png'), width = 9, height = 7)
+    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_coverage.png'), width = 9, height = 9)
   }else{
     ggplot(covdf, aes(x = g, y = value, colour = name)) + 
       geom_point(alpha = 0.5) + 
@@ -413,14 +437,15 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   if(bivar){
     ggplot(data = fig2df, aes(x = g1, y = g2, fill = bias)) + 
       geom_raster() + 
-      facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+      facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), 
+                   cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
       xlab(expression(paste(gamma[1]))) +
       ylab(expression(paste(gamma[2]))) +
       scale_fill_viridis() + 
       theme(legend.title = element_text(size = 12),
             legend.text = element_text(angle=-90, hjust = -.05)) + 
       labs(fill = paste0(effect, ' bias'))
-    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_bias.png'), width = 9, height = 7)
+    ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_bias.png'), width = 9, height = 9)
     
   }else{
     ggplot(fig2df, aes(x = g, y = bias)) + 

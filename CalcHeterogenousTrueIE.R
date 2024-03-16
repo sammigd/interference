@@ -74,8 +74,8 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           #                                 ifelse()))
           
           #treated node
-          print('here is the new part')
-          print(mini$Tij)
+          #print('here is the new part')
+          #print(mini$Tij)
           mini$pot_out[mini$Aij == 1] <- 1
           
           #untrt alter where center IS NOT treated
@@ -86,7 +86,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           
           #untrt alter where center IS treated
           mini$pot_out[mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 1] <- as.numeric(rbinom(mini$n_untrt_alter, 1, diffusion_p))
-          print('the new part is over')
+          #print('the new part is over')
         }
         #print('*')
 

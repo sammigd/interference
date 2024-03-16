@@ -182,7 +182,11 @@ Ypop_sd <- function(ygroup, scores = NULL,
     ypop_var_hj_oe = sln / n_neigh
     }
     
-    return(list(ypop = ypop, ypop_var = ypop_var_hj, ypop_var_de = ypop_var_hj_de, ypop_var_ie = ypop_var_hj_ie, ypop_var_oe = ypop_var_hj_oe))
+    return(list(ypop = ypop, 
+                ypop_var = ypop_var_hj, 
+                ypop_var_de = ypop_var_hj_de,
+                ypop_var_ie = ypop_var_hj_ie, 
+                ypop_var_oe = ypop_var_hj_oe))
     
   }
 }  

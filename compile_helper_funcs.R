@@ -27,7 +27,7 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
     #HAJ
     y0_haj[,i] = test$haj[1,]
     y1_haj[,i] = test$haj[2,]
-    y_haj[,i] = test$oe_haj
+    if(diffusion){y_haj[,i] = test$oe_haj}else{y_haj[,i] = NA}
 
     #HT Y0 VAR
     y0_ht_var[,i] = test$ht_yhat_var[1,1,]
@@ -112,6 +112,7 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
       true_ie0[,i] = test$truth$ie[1,,ngam]
       true_ie1[,i] = test$truth$ie[2,,ngam]
       true_oe[,i] = test$truth$oe[,ngam]
+      true_y[,i] = NA
       
       if((beta4 == 0 | beta4 == '0') & beta5 == 0){
         true_oe[,i] = 0
@@ -131,7 +132,6 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
       true_ie1[,i] = truth_use$true_ie1
       true_oe[,i] = truth_use$true_oe #test$truth$oe[,67] #NA#truth_use$true_oe #NA
       true_y[,i] = truth_use$true_y
-      
     }
 
     
@@ -205,7 +205,7 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
   for(i in 1:length(e.names)){
     #print(str(estimates[[i]]))
     est = estimates[[i]]
-    if(e.names[i] == 'y0_ht_mcvar' | e.names[i] == 'y1_ht_mcvar'){cal = apply(est, 1, var)}else{cal = apply(est, 1, mean)}
+    if(e.names[i] == 'y0_ht_mcvar' | e.names[i] == 'y1_ht_mcvar'){cal = apply(est, 1, var)}else{cal = apply(est, 1, mean, na.rm =T)}
     assign(e.names[i], cal)
   }
   

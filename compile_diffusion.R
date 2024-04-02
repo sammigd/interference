@@ -3,6 +3,7 @@ library(latex2exp)
 library(tidyverse)
 library(reporter)
 library(here)
+library(xtable)
 
 #load the helper functions
 source('/home/sgd37/project/cai/interference/compile_helper_funcs.R')
@@ -163,7 +164,7 @@ for(i in  c('DE', 'IE0', 'IE1', 'OE')){
     geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
                 alpha = 0.2,fill = '#00BFC4', colour = rgb(0,0,0,0)) + 
     facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
-    xlab(TeX(r'(\gamma)')) + ylab(i)
+    xlab(TeX(r'(\gamma)')) + ylab(ylab)
   ggsave(paste0(fig_loc, '/', effect, '_diffusion_results.png'), width = 9, height = 6)
   
   #plot coverage
@@ -179,7 +180,7 @@ for(i in  c('DE', 'IE0', 'IE1', 'OE')){
     geom_point() +
     theme(panel.spacing = unit(1.5, "lines")) + 
     facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
-    xlab(TeX(r'(\gamma)')) + ylab('coverage') + 
+    xlab(TeX(r'(\gamma)')) + ylab('95% CI Coverage') + 
     geom_hline(yintercept = 0.95)
   ggsave(paste0(fig_loc, '/', effect, '_diffusion_coverage.png'), width = 9, height = 6.5)
   
@@ -190,7 +191,7 @@ for(i in  c('DE', 'IE0', 'IE1', 'OE')){
     geom_point(alpha = 0.5) + 
     theme(panel.spacing = unit(1.5, "lines")) + 
     facet_grid(rows = vars(gamma_ind, Conc), cols = vars(pdiff_long)) + 
-    ylab('bias') + 
+    ylab('Bias') + 
     xlab(TeX(r'(\gamma)')) + 
     geom_hline(yintercept = 0)
   ggsave(paste0(fig_loc, '/', effect, '_diffusion_bias.png'), width = 9, height = 6)
@@ -198,6 +199,14 @@ for(i in  c('DE', 'IE0', 'IE1', 'OE')){
   
 }
 
+diff_bias = bigbiastab %>%
+  group_by(pdiff, concordance, gamma_ind) %>%
+  summarise(DE = mean(de_haj - true_de),
+            IE0 = mean(ie0_haj - true_ie0),
+            IE1 = mean(ie1_haj - true_ie1),
+            OE = mean(oe_haj - true_oe))
+  
+print(xtable(diff_bias, type = "latex", digits = 6), file = here("diff_bias_table.tex"), include.rownames = F)
 
 
 

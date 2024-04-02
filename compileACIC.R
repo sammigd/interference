@@ -4,9 +4,10 @@ library(viridis)
 library(ggh4x)
 library(reporter)
 library(xtable)
+library(here)
 
 
-bivar = T
+bivar = F
 setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
 source('interference/compile_helper_funcs.R')
 
@@ -100,8 +101,8 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'indirect1_haj', 'indirect1_analyticalvar_haj', 'indirect1_bootvar_haj',
             'oe_haj', 'oe_analyticalvar_haj', 'oe_bootvar_haj',
             'oe_ht', 'oe_analyticalvar_ht', 'oe_bootvar_ht',
-            'true_ie0', 'true_ie1', 'true_oe', 'true_de', 'true_y0', 'true_y1',
-            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj', 'y0_ht_var', 'y1_ht_var', 'y0_ht_bootvar', 'y1_ht_bootvar', 'y0_ht_mcvar', 'y1_ht_mcvar', 
+            'true_ie0', 'true_ie1', 'true_oe', 'true_de', 'true_y0', 'true_y1', 'true_y',
+            'y0_ht', 'y1_ht', 'y0_haj', 'y1_haj', 'y_haj','y0_ht_var', 'y1_ht_var', 'y0_ht_bootvar', 'y1_ht_bootvar', 'y0_ht_mcvar', 'y1_ht_mcvar', 
             'oe_anacoverage_ht', 'oe_anacoverage_haj', 'oe_bootcoverage_ht', 'oe_bootcoverage_haj',
             'de_anacoverage_ht', 'de_anacoverage_haj', 'de_bootcoverage_ht', 'de_bootcoverage_haj',
             'ie0_anacoverage_ht', 'ie0_anacoverage_haj', 'ie0_bootcoverage_ht', 'ie0_bootcoverage_haj',
@@ -170,8 +171,8 @@ power_tab = teststattable %>%
   separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
   mutate(b5 = substr(b5, 1,1)) %>% dplyr::select(-x, -`TRUE`, -`FALSE`, -total) %>%
   arrange(b4, b5, b3, concordance) %>%
-  mutate(Level = ifelse(b4==0 & b5==0, rej_rate, ' '),
-         Power = ifelse(b4!=0 | b5 !=0, rej_rate, ' ')) %>%
+  mutate(Level = ifelse(b4==0 & b5==0, round(rej_rate,2), ' '),
+         Power = ifelse(b4!=0 | b5 !=0, round(rej_rate,2), ' ')) %>%
   dplyr::select(b3, b4, b5, concordance, teststat, Level, Power)
   
 print(xtable(power_tab, type = "latex"), file = "power_table.tex", include.rownames = F)
@@ -270,7 +271,6 @@ for (parms in 1:length(parmlist)){
 } 
 
 og = bigbiastab
-ggplot(data = og, aes(g1, g2)) + geom_raster(aes(fill = oe_haj)) + facet_wrap(~label+b5)
 #bigbiastab = og
 
 #pick a for analytical variance, b for bootstrapped variance
@@ -280,10 +280,8 @@ if(!bivar){
   #bigbiastab = bigbiastab %>% 
   #  filter(gamma_ind == 'X1' & (true_oe == 0 | g !='0')) %>%
   #  filter(gamma_ind != 'X3')
-  
   bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', #removes a few dups
     (true_oe == 0 | g !='0'))
-  
 }
 #
 
@@ -394,7 +392,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
                   alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
       facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
       xlab(TeX(r'(\gamma)')) + 
-      ylab(effect) #+ ylim(-.042,.042)
+      ylab(ylab) #+ ylim(-.042,.042)
     ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_results.png'), width = 9, height = 6)
   }
   
@@ -423,8 +421,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
     ggplot(covdf, aes(x = g, y = value, colour = name)) + 
       geom_point(alpha = 0.5) + 
       facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
-      #ggtitle('Coverage of 95% Confidence Intervals') +
-      ylab('coverage') + 
+      ylab('95% CI Coverage') + 
       xlab(TeX(r'(\gamma)')) + 
       geom_hline(yintercept = 0.95)
     ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_coverage.png'), width = 9, height = 6)
@@ -444,15 +441,14 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
       scale_fill_viridis() + 
       theme(legend.title = element_text(size = 12),
             legend.text = element_text(angle=-90, hjust = -.05)) + 
-      labs(fill = paste0(effect, ' bias'))
+      labs(fill = paste0(effect, ' Bias'))
     ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_bias.png'), width = 9, height = 9)
     
   }else{
     ggplot(fig2df, aes(x = g, y = bias)) + 
       geom_point(alpha = 0.5) + 
       facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
-      #ggtitle('Coverage of 95% Confidence Intervals') +
-      ylab('bias') + 
+      ylab('Bias') + 
       xlab(TeX(r'(\gamma)')) + 
       geom_hline(yintercept = 0)
     ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_bias.png'), width = 9, height = 6)
@@ -460,11 +456,36 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
 
 }
 
+#bias tables for appendix
+##bivariate
+bt = bigbiastab %>%
+  filter(gamma_ind == 'X1') %>%
+  group_by(b3,b4,b5, concordance) %>%
+  summarise(DE = round(mean(bias_de_haj),6),
+            IE0 = round(mean(bias_ie0_haj),6),
+            IE1 = round(mean(bias_ie1_haj),6),
+            OE = round(mean(bias_oe_haj),6)) %>%
+  #mutate(gamma_ind = ifelse(gamma_ind == 'X1', 'Target X' %p% supsc('(1)'), 'Target X' %p% supsc('(2)'))) %>%
+  arrange(b3, b4, b5, concordance)
+
+print(xtable(bt, type = "latex", digits = 6, align = "|c|c|c|c|c|c|c|c|c|"), file = here("bias_table.tex"), include.rownames = F)
 
 
 
+##univariate
+uni_bt = bigbiastab %>%
+  filter(gamma_ind != 'X3') %>%
+  mutate(concordance = ifelse(concordance == '0.Rsave', "0", "0.65"),
+         b5 = '0') %>%
+  group_by(b3,b4,b5,concordance, gamma_ind) %>%
+  summarise(`DE bias` = round(mean(bias_de_haj),6),
+            `IE(0) bias` = round(mean(bias_ie0_haj),6),
+            `IE(1) bias` = round(mean(bias_ie1_haj),6),
+            `OE bias` = round(mean(bias_oe_haj),6)) %>%
+  #mutate(gamma_ind = ifelse(gamma_ind == 'X1', 'Target X' %p% supsc('(1)'), 'Target X' %p% supsc('(2)'))) %>%
+  arrange(b3, b4, b5, concordance)
 
-
+print(xtable(uni_bt, type = "latex", digits = 6, align = "|c|c|c|c|c|c|c|c|c|c|"), file = here("uni_bias_table.tex"), include.rownames = F)
 
 
 save.image(paste0(fig_loc, '/mod_wkspc.RSave'))

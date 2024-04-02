@@ -36,7 +36,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
                      alpha_re_bound = 10, integral_bound = 10,
                      keep_re_alpha = FALSE, estimand = c('1', '2'),
                      verbose = TRUE, propensity_score = FALSE, loud_denom = FALSE, halfwt = F, 
-                     fix_phi = T, const_size = F) {
+                     fix_phi = T, const_size = F, cts_trt = F) {
   
   #testing
   #alpha_re_bound = 15; verbose = F;gamma_numer = gamma_list; loud_denom = F; fix_phi = T 
@@ -71,25 +71,20 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
   oe_yhat_group <- array(NA, dim = c(n_neigh, ncol(gamma_numer)))
   dimnames(oe_yhat_group) <- list(neigh = 1:n_neigh, gammas = 1:ncol(gamma_numer))
   
-  #create empty matrix for the hajek weights
+  #c reate empty matrix for the hajek weights
   wt_list = array(0, dim = c(n_neigh, 2, ncol(gamma_numer)))
   dimnames(wt_list) <- list(neigh = 1:n_neigh, trt = c(0, 1), gammas = 1:ncol(gamma_numer)) #want one sum for each cluster
-  #the sum of weights in each cluster
+  # the sum of weights in each cluster
   
   #create empty matrix for the hajek weights
   oe_wt_list = array(0, dim = c(n_neigh, ncol(gamma_numer)))
   dimnames(oe_wt_list) <- list(neigh = 1:n_neigh, gammas = 1:ncol(gamma_numer))
   
   # Names of treatment and outcome column.
-  if (!is.null(trt_col)) {
-    names(dta)[trt_col] <- 'A'
-  }
-  if (!is.null(out_col)) {
-    names(dta)[out_col] <- 'Y'
-  }
+  if (!is.null(trt_col)) {names(dta)[trt_col] <- 'A'}
+  if (!is.null(out_col)) {names(dta)[out_col] <- 'Y'}
 
-  
-  for (gg in 1 : ncol(gamma_numer)) { #changed this
+  for (gg in 1 : ncol(gamma_numer)) {
     #gg = 1
     if (verbose){print(paste('gamma =', gamma_numer[-1,gg]))}
     
@@ -99,10 +94,6 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
       #nn = 1
       # Calculating the random effect that gives alpha.
       Xi <- dta[neigh_ind[[nn]], cov_cols]
-      #print('str xi')
-      #print(str(Xi))
-      #print('gammas')
-      #print(curr_gamma_numer)
       lin_pred <- cbind(1, as.matrix(Xi)) %*% curr_gamma_numer
       re_alpha <- FromAlphaToRE(alpha = alpha, lin_pred = lin_pred,
                                   alpha_re_bound = alpha_re_bound)
@@ -117,7 +108,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
       
       oeden = calc_denominator_sd2(A = Aj, fix_phi = fix_phi, pop_p_trt = pop_p_trt)
       
-      oeden = length(neigh_ind[[nn]]) * oeden  #comment try may9
+      oeden = length(neigh_ind[[nn]]) * oeden 
       
       wt_curr = (oenum$prob)*length(neigh_ind[[nn]]) #sum of all the numerators in the cluster
       

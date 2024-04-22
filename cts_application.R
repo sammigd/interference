@@ -119,7 +119,7 @@ dta$pred_b = d_b#dBE(dta$A, mu = fitted(mod_b))
 
 #TAKE PRODUCT OVER TIME POINTS
 dta = dta %>%
-  group_by(neigh) %>% 
+  group_by(neigh) %>%  #change this to individual
   arrange(time) %>%
   mutate(ratio = pred_a / pred_b, 
          weights = cumprod(ratio)) #this is exactly the weights i would put into a msm

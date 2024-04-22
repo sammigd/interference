@@ -1,7 +1,7 @@
 library(here)
 library(tidyverse)
 
-n_clus = 500
+n_clus = 200
 n_i <- 15
 n_time <- 2
 n_gamma <- 11
@@ -29,24 +29,31 @@ for (rep in 1:length(alliters)){
 
 avg_truth = apply(truth, c(2,3), mean, na.rm = T)
 #############################################
-alliters_sim = list.files(path = 'ch3sim_no_re')
-alliters_wts = list.files(path = 'ch3sim_wts_no_re')
+alliters_sim = list.files(path = 'ch3sim')
+alliters_wts = list.files(path = 'ch3sim_wts')
+alliters_sum = list.files(path = 'ch3sim_num')
+
 
 y_haj = array(NA, dim = c(200, n_time, n_gamma, length(alliters))) ##clus, time, g
 wt_haj =  array(NA, dim = c(200, n_time, n_gamma, length(alliters))) 
+num =  array(NA, dim = c(200, n_time, n_gamma, length(alliters))) 
+
 
 for (rep in 1:length(alliters_sim)){
-  load(paste0('ch3sim_no_re/', alliters_sim[rep]))
-  load(paste0('ch3sim_wts_no_re/', alliters_wts[rep]))
+  load(paste0('ch3sim/', alliters_sim[rep]))
+  load(paste0('ch3sim_wts/', alliters_wts[rep]))
+  load(paste0('ch3sim_num/', alliters_sum[rep]))
+  
   
   y_haj[,,,rep] <- clust_avg_y_sim[,,,1]
   wt_haj[,,,rep] <- hajek_wts[,,,1]
+  num[,,,rep] <- sum_num[,,,1]
   
 }
 avg_y_haj = apply(y_haj, c(2,3), mean, na.rm = T)
 lb_y_haj = apply(y_haj, c(2,3), quantile, probs = 0.025, na.rm = T)
 ub_y_haj = apply(y_haj, c(2,3), quantile, probs = 0.975, na.rm = T)
-
+apply(num, c(2,3), mean, na.rm = T)
 
 avg_wt_haj = apply(wt_haj, c(2,3), mean, na.rm = T)
 
@@ -79,3 +86,4 @@ for(row in 1:nrow(test)){
  }
 cov = append(cov, mean(bw, na.rm = T))
 }
+cov

@@ -23,8 +23,8 @@ n_rep = 1
 beta_0 = 3
 beta_1 = 0
 beta_2 = 0
-beta_3 = 1
-beta_4 = 1
+beta_3 = 2
+beta_4 = 2
 beta_5 = 0
 
 ngam = 11
@@ -35,6 +35,8 @@ gamma_cts = cbind(gamma_list, rep(0, 2))
 
 clust_avg_y_sim = array(0, dim = c(n_clus, n_time, n_gamma, n_rep))
 hajek_wts = array(0, dim = c(n_clus, n_time, n_gamma, n_rep))
+sum_num = array(0, dim = c(n_clus, n_time, n_gamma, n_rep))
+
 
 
 for(rep in 1:n_rep){  
@@ -89,13 +91,14 @@ for(rep in 1:n_rep){
   sim_df$pred_a = d_a#dBE(sim_df$A, mu = fitted(mod_a)) #d_a
   sim_df$pred_b = d_b#dBE(sim_df$A, mu = fitted(mod_b)) #d_b
   
+  #take product over time
   sim_df = sim_df %>%
-    group_by(id) %>% #this needs to be indicidul level!!!!!
+    group_by(id) %>% 
     arrange(time) %>%
     mutate(ratio = pred_a / pred_b, 
            weights = cumprod(ratio))
   
-  #take product over time
+  #take product over cluster
   denom_values = sim_df %>%
     group_by(neigh, time) %>%
     summarise(denom_weights = prod(weights))
@@ -107,7 +110,7 @@ for(rep in 1:n_rep){
   sim_df$intercept_list = NA
   
   for(g in 1:n_gamma){
-    #g = 1
+    #g=10
     curr_gamma_numer = gamma_cts[,g]
     for(nn in 1:n_clus){
       for(tt in 1:n_time){
@@ -133,11 +136,15 @@ for(rep in 1:n_rep){
     design_mat = as.matrix(cbind(1, sim_df[, c('X1')]))
     sim_df$lin_pred = (design_mat %*% curr_gamma_numer)[,1] + sim_df$intercept_list
     
-    sim_df %>% group_by(neigh, time) %>% summarise(mean(A),
-                                                mean(expit(lin_pred)))
+    #sim_df %>% group_by(neigh, time) %>% summarise(mean(A),
+    #                                            mean(expit(lin_pred)))
+  
     
     #COUNTERFACTUAL NUMERATOR
-    sim_df$pi_itj = dBE(x = sim_df$A, mu = expit(sim_df$lin_pred)) #pi function in the numerator of wt 
+    #sim_df$counterfactual_A = rBE(n = nrow(sim_df), mu = expit(sim_df$lin_pred)) #pi function in the numerator of wt 
+    #sim_df$pi_itj = dBE(x = sim_df$A, mu = expit(sim_df$lin_pred)) #pi function in the numerator of wt 
+    sim_df$pi_itj = expit(sim_df$lin_pred)
+
     
     #POTENTIAL OUTCOMES
     dta_w_hajek_it = sim_df %>%
@@ -154,7 +161,7 @@ for(rep in 1:n_rep){
       for(tt in 1:n_time){
         clust_avg_y_sim[nn, tt, g, rep] = dta_w_hajek_it %>% filter(neigh == nn, time == tt) %>% pull(hajek_y)
         hajek_wts[nn, tt, g, rep] = dta_w_hajek_it %>% filter(neigh == nn, time == tt) %>% pull(hajek_denom)
-        
+        sum_num[nn,tt,g,rep] =  dta_w_hajek_it %>% filter(neigh == nn, time == tt) %>% pull(sum_numerator)
         
       }
     }
@@ -163,6 +170,8 @@ for(rep in 1:n_rep){
 
 save(clust_avg_y_sim, file = here('ch3sim', paste0('ch3_sim', i, '.Rsave')))
 save(hajek_wts, file = here('ch3sim_wts', paste0('ch3_simwt', i, '.Rsave')))
+save(sum_num, file = here('ch3sim_num', paste0('ch3_num', i, '.Rsave')))
+
 
 
 

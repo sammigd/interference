@@ -24,8 +24,8 @@ n_rep = 1
 beta_0 = 3
 beta_1 = 0
 beta_2 = 0
-beta_3 = 1
-beta_4 = 1
+beta_3 = 2
+beta_4 = 2
 beta_5 = 0
 
 ngam = 11
@@ -93,14 +93,15 @@ for(rep in 1:n_rep){
     sim_df$new_A = rBE(n = nrow(sim_df), mu = expit(sim_df$lin_pred))
     
     sim_df = sim_df %>% group_by(neigh, time) %>% 
-      mutate(new_W = mean(new_A), 
-             new_U = mean(new_A[X1 == 1]), 
-             new_V = mean(new_A[X2 == 1])) #should exclude unit j
+      mutate(new_W = (sum(new_A) - new_A) / (n_i-1),  #good
+             new_U = (sum(new_A[X1 == 1]) - new_A*X1) / (sum(X1) - X1), 
+             new_V = (sum(new_A[X2 == 1]) - new_A*X2) / (sum(X2) - X2)) 
+
     
     #OUTCOME MODEL
     sim_df$pot_out = beta_0 + beta_1*sim_df$new_A +  beta_2*sim_df$X1 + beta_3*sim_df$new_W + beta_4*sim_df$new_U + beta_5*sim_df$new_V 
     
-    sim_df$pot_out = exp(sim_df$pot_out)
+    #sim_df$pot_out = exp(sim_df$pot_out)
     
     neigh_results = sim_df %>% group_by(neigh, time) %>% summarise(Y = mean(pot_out))
     pop_results = sim_df %>% group_by(time) %>% summarise(Y = mean(pot_out))

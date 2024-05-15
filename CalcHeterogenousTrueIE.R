@@ -35,9 +35,9 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
         if(sum(new_Aj) == length(probs) | sum(new_Aj) == 0){new_Aj = rbinom(length(probs),1,probs)}
         
         if(diffusion == F){
-          new_Tj = sum(new_Aj) / length(probs)
-          Tprimej = sum(new_Aj*Xj[,1]) / sum(new_Aj)
-          Tprimej2 = sum(new_Aj*Xj[,2]) / sum(new_Aj)
+          new_Tj = (sum(new_Aj) - new_Aj) / (length(probs)-1)
+          Tprimej = (sum(new_Aj*Xj[,1])-new_Aj*Xj[,1]) / (sum(new_Aj)-new_Aj)
+          Tprimej2 = (sum(new_Aj*Xj[,2])-new_Aj*Xj[,2]) / (sum(new_Aj)-new_Aj)
           
           
           #outcome model

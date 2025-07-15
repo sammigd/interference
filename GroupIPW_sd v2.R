@@ -51,7 +51,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
   # We only return the ksi's if we are estimating estimand 1.
   keep_re_alpha <- keep_re_alpha & (estimand == '1')
   
-  # Specifyling neigh_ind will avoid re-running the following lines.
+  # Specifying neigh_ind will avoid re-running the following lines.
   if (is.null(neigh_ind)) {
     neigh_ind <- sapply(1 : max(dta$neigh), function(x) which(dta$neigh == x))
     if (typeof(neigh_ind) != 'list'){#if(const_size == T){
@@ -106,7 +106,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
       
       ycurr = ((dta$Y[neigh_ind[[nn]]] * oenum$prob))
       
-      oeden = calc_denominator_sd2(A = Aj, fix_phi = fix_phi, pop_p_trt = pop_p_trt)
+      oeden = calc_denominator_sd2(A = Aj, fix_phi = fix_phi, pop_p_trt = pop_p_trt, alpha = alpha)
       
       oeden = length(neigh_ind[[nn]]) * oeden 
       
@@ -138,7 +138,7 @@ GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
            }
          }
         
-         denom <- calc_denominator_sd2(A = dta$A[neigh_ind[[nn]]], fix_phi = fix_phi, pop_p_trt = pop_p_trt)
+         denom <- calc_denominator_sd2(A = dta$A[neigh_ind[[nn]]], fix_phi = fix_phi, pop_p_trt = pop_p_trt, alpha = alpha)
 
          if(loud_denom == TRUE){print(paste0('denom is ', denom))}
          

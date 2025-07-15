@@ -1,10 +1,13 @@
 #compile big sim results
+#install.packages('tidyverse')
 library(tidyverse)
 library(viridis)
 library(ggh4x)
 library(reporter)
 library(xtable)
 library(here)
+library(ggplot2)
+library(latex2exp)
 
 
 bivar = F
@@ -12,7 +15,9 @@ setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
 source('interference/compile_helper_funcs.R')
 
 if(bivar){fig_loc = "~/project/cai/figures/ms_figs_bivar_two"}
-if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar"}
+#if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar"}
+if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
+
 
 
 library(latex2exp)
@@ -35,7 +40,7 @@ theme_set(theme_minimal()+
 #univar heterogeneity
 if(!bivar){
   ngam = 100
-  gl = seq(from = -.2, to = .2, length.out = 33)
+  gl = seq(from = -1.3, to = 1.3, length.out = 33)
   ngl = rep(0, 33)
   gamma_list = rbind(rep(0, 99),
                      c(gl, ngl, ngl),
@@ -52,7 +57,7 @@ if(!bivar){
 #bivar heterogeneity
 if(bivar){
   ngam = 64
-  gl = c(seq(from = -.2, to = .2, length.out = 7), 0)
+  gl = c(seq(from = -1.3, to = 1.3, length.out = 7), 0)
   ggrid = expand.grid(gl, gl)
   gamma_list = t(cbind(0, ggrid, 0))
   
@@ -67,9 +72,11 @@ if(bivar){
 #powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
 
 #ms stuff!!!
-if(!bivar){setwd("~/project/cai/ms_stat_test_de_july3_univariate")}
+if(!bivar){setwd("~/project/cai/ms_univar_2024may15_smallalpha")}
+#if(!bivar){setwd("~/project/cai/ms_univar_2024may15")}
 
-if(bivar){setwd("~/project/cai/ms_bivar_two_2024jan13")}
+
+if(bivar){setwd("~/project/cai/ms_bivar_2024jun01")}
 
 
 
@@ -119,7 +126,12 @@ source('~/project/cai/interference/oe_stattest.R')
 #get counts
 table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
 sigresults = c()
+sigresults_ie1 = c()
+sigresults_ie0 = c()
+sigresults_de = c()
 empty = matrix(nrow = length(alliters), ncol = 3)
+empty_other = matrix(nrow = length(alliters), ncol = 4)
+
 ind = 1
 
 #for each set of parameters
@@ -133,22 +145,76 @@ for (pset in 1:length(parmlist)){
     
     #run sig test for that simulation
     testresult = oe_sigtest(test$oe, test$oe_cov)
-    #testresult_ie1 = oe_sigtest(test$ie1, test$ie1_cov)
-    #testresult_de = oe_sigtest(test$direct, test$direct_cov)
+    testresult_ie1 = oe_sigtest(test$indirect1, test$indirect_cov[,,2])
+    testresult_ie0 = oe_sigtest(test$indirect0, test$indirect_cov[,,1])
+    testresult_de = oe_sigtest(test$direct, test$direct_cov)
     
     sigresults = append(sigresults, testresult$accept)
+    sigresults_ie1 = append(sigresults_ie1, testresult_ie1$accept)
+    sigresults_ie0 = append(sigresults_ie0, testresult_ie0$accept)
+    sigresults_de = append(sigresults_de, testresult_de$accept)
+    
+    
     #maxlist = append(maxlist, testresult$diff)
     empty[ind,1] = parmlist[pset]
     empty[ind,2] = testresult$accept #is sig?
     empty[ind,3] = testresult$diff #max difference
+    
+    empty_other[ind,1] = parmlist[pset]
+    empty_other[ind,2] = testresult_ie0$accept
+    empty_other[ind,3] = testresult_ie1$accept
+    empty_other[ind,4] = testresult_de$accept
+    
     ind = ind + 1
   }
   print(pset)
   print('is done')
+  save(empty_other, file = paste0(fig_loc, '/bivar_power_ie_de.RData'))
   save(empty, file = paste0(fig_loc, '/bivar_power.RData'))
+
 }
 
 load(file = paste0(fig_loc, '/bivar_power.RData') )
+load(file = paste0(fig_loc, '/bivar_power_ie_de.RData') )
+
+empty_other = data.frame(empty_other)
+names(empty_other) = c('parms', 'ie0_accept', 'ie1_accept', 'de_accept') 
+
+de_power = empty_other %>% dplyr::select(parms, de_accept) %>%
+  group_by(parms, de_accept) %>% summarise(Freq = n()) %>%
+  pivot_wider(names_from = de_accept, values_from = Freq, values_fill = 0) %>%
+  mutate(total = `FALSE` + `TRUE`,
+         acc_rate =  `TRUE` / total,
+         de_rej_rate = `FALSE` / total) %>% dplyr::select(parms, de_rej_rate)
+
+ie0_power = empty_other %>% dplyr::select(parms, ie0_accept) %>%
+  group_by(parms, ie0_accept) %>% summarise(Freq = n()) %>%
+  pivot_wider(names_from = ie0_accept, values_from = Freq, values_fill = 0) %>%
+  mutate(total = `FALSE` + `TRUE`,
+         acc_rate =  `TRUE` / total,
+         ie0_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie0_rej_rate)
+
+ie1_power = empty_other %>% dplyr::select(parms, ie1_accept) %>%
+  group_by(parms, ie1_accept) %>% summarise(Freq = n()) %>%
+  pivot_wider(names_from = ie1_accept, values_from = Freq, values_fill = 0) %>%
+  mutate(total = `FALSE` + `TRUE`,
+         acc_rate =  `TRUE` / total,
+         ie1_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie1_rej_rate)
+
+other_power = merge(de_power, ie0_power, by = 'parms') %>% 
+  merge(ie1_power, by = 'parms') %>%
+  separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+  mutate(b5 = substr(b5, 1,1)) %>%
+  arrange(b4, b5, b3, concordance) %>%
+  rename(de_level = de_rej_rate) %>%
+  mutate(Ie0_Level = ifelse(b4==0 & b5==0, round(ie0_rej_rate,2), ' '),
+         Ie0_Power = ifelse(b4!=0 | b5 !=0, round(ie0_rej_rate,2), ' '),
+         Ie1_Level = ifelse(b4==0 & b5==0, round(ie1_rej_rate,2), ' '),
+         Ie1_Power = ifelse(b4!=0 | b5 !=0, round(ie1_rej_rate,2), ' ')) %>%
+  dplyr::select(b3, b4, b5, concordance, de_level, Ie0_Level, Ie0_Power, Ie1_Level, Ie1_Power)
+
+print(xtable(other_power, type = "latex"), file = "../power_table_ie_de.tex", include.rownames = F)
+
 
 empty = data.frame(empty)
 names(empty) = c('parms', 'TF', 'teststat')
@@ -192,8 +258,8 @@ for (parms in 1:length(parmlist)){
   concordance = ugly_parm[[1]][4]
   b3 = ugly_parm[[1]][2]
   b4 = ugly_parm[[1]][3]
-  if(bivar){b5 = str_sub(ugly_parm[[1]][5], 1, 1)}
-  if(!bivar){b5 = 0}
+  b5 = str_sub(ugly_parm[[1]][5], 1, 1)
+  #if(!bivar){b5 = 0}
   #if(!(b4 %in% c(0,1))){next}
   #if(!(concordance %in% 0)){next}
   estimates = get_means(parms, e.names)
@@ -270,7 +336,9 @@ for (parms in 1:length(parmlist)){
   bigbiastab = rbind(bigbiastab, biastab)
 } 
 
-og = bigbiastab
+hist(bigbiastab$true_de)
+
+og = bigbiastab 
 #bigbiastab = og
 
 #pick a for analytical variance, b for bootstrapped variance
@@ -281,48 +349,10 @@ if(!bivar){
   #  filter(gamma_ind == 'X1' & (true_oe == 0 | g !='0')) %>%
   #  filter(gamma_ind != 'X3')
   bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', #removes a few dups
-    (true_oe == 0 | g !='0'))
+    (true_oe == 0 | g !='0')) %>%
+    filter(b5 == 0)
 }
 #
-
-#######################################################
-# FOR BIVARIATE INTERVENTION
-#######################################################
-bigbiastab$g
-table(bigbiastab$gamma_ind)
-
-ggplot(data = bigbiastab, aes(x = g1, y = g2)) + 
-  geom_tile(aes(fill = oe_haj)) + 
-  facet_wrap(~label+b5, nrow = 2) + ggtitle('oe coverage for bivariate intervention')
-
-ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = oe_anacoverage_haj)) + 
-  geom_tile() + 
-  facet_grid(rows = vars(gamma_ind, concordance), cols = vars(b4, b3, b5)) + 
-  ggtitle('oe coverage for bivariate intervention')
-
-ggplot(data = bigbiastab, aes(x = g1, y = oe_anacoverage_haj, col = g2)) + 
-  geom_point() + 
-  facet_wrap(~label) + ggtitle('oe coverage for bivariate intervention')
-
-ggplot(data = bigbiastab, aes(x = g1, y = oe_bootcoverage_haj, col = g2)) + 
-  geom_point() + 
-  facet_wrap(~label) + ggtitle('oe coverage for bivariate intervention')
-
-
-ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = sum_wts0)) + 
-  geom_tile() + 
-  facet_wrap(~label)
-
-ggplot(data = bigbiastab, aes(x = g1, y = g2, fill = oe_haj)) + 
-  geom_tile() + 
-  facet_wrap(~label+b5, nrow = 2)
-
-xx = bigbiastab %>%
-  filter(b5 == 1, b3 == 0, b4 == 0, concordance == 0)
-plot(xx$g1, xx$g2)
-table(is.na(xx$oe_haj))
-
-
 ########################################################################
 # FOR POWER CALCS
 ########################################################################
@@ -374,15 +404,32 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   
   #EFFECT PLOT
   if(bivar){
-    ggplot(data = fig2df, aes(x = g1, y = g2, fill = est)) + 
+    dd = fig2df %>%
+      filter(!(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)' & 
+               InterferenceX2 =='Heterogeneous Interference\n (β₅=1)'),
+             !(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)' & 
+                 Conc =='Cor(X⁽¹⁾,X⁽²⁾)>0')) %>%
+      mutate(InterferenceX2 = case_when(InterferenceX2 == 'No Interference\n (β₅=0)' ~ 'Homogeneous Interference\n (β₅=0)',
+                                        InterferenceX2 == 'Heterogeneous Interference\n (β₅=1)' ~ 'Heterogeneous Interference\n (β₅=1)'),
+             InterferenceX2 = factor(InterferenceX2, levels = c('Homogeneous Interference\n (β₅=0)','Heterogeneous Interference\n (β₅=1)' )),
+             IntIn1 = ifelse(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)', 'No Interference', IntIn1),
+             IntIn1 = fct_rev(factor(IntIn1)))#,
+             #IntIn1 = ifelse(Interference == 'No Interference\n (β₃=0; β₄=0)', '', IntIn1))
+    ggplot(data = dd, aes(x = g1, y = g2, fill = est)) + 
       geom_raster() + 
-      facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+      ggh4x::facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), 
+                          cols = vars(IntIn1, Interference), 
+                          nest_line = element_line(), 
+                          solo_line = T,
+                          render_empty = F) + 
       xlab(expression(paste(gamma[1]))) +
       ylab(expression(paste(gamma[2]))) +
       theme(legend.text = element_text(angle=-90, hjust = -.05)) + 
       scale_fill_viridis() + 
       theme(legend.title = element_text(size = 12)) + 
       labs(fill = effect)
+    #ggsave(paste0(fig_loc, '/', 'new_OE_labels.png'), width = 9, height = 9)
+    
     ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_results.png'), width = 9, height = 9)
   }else{ #univar
     ggplot(fig2df, aes(x = g, y = est))+#, #color = name, shape = name)) + 
@@ -390,7 +437,11 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
       geom_line(aes(y = true)) + 
       geom_ribbon(aes(x = g, ymin = lb, ymax = ub), 
                   alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
-      facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+      facet_nested(rows = vars(gamma_ind, Conc), 
+                   cols = vars(IntIn1, Interference), 
+                   nest_line = element_line(), 
+                   solo_line = T,
+                   render_empty = F) + 
       xlab(TeX(r'(\gamma)')) + 
       ylab(ylab) #+ ylim(-.042,.042)
     ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_results.png'), width = 9, height = 6)
@@ -400,15 +451,19 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   colname_boot = paste0(str_to_lower(i), '_bootcoverage_haj')
   colname_ana =paste0(str_to_lower(i), '_anacoverage_haj')
   
-  covdf = fig2df %>% 
-    pivot_longer(c(colname_boot,colname_ana)) %>% 
-    mutate(name = case_when(name == colname_boot ~ 'bootstrap',
-                            name == colname_ana ~ 'analytical'))
-  
   if(bivar){
+    covdf = dd %>% 
+      pivot_longer(c(colname_boot,colname_ana)) %>% 
+      mutate(name = case_when(name == colname_boot ~ 'bootstrap',
+                              name == colname_ana ~ 'analytical'))
+    
     ggplot(data = covdf %>% filter(name == 'analytical'), aes(x = g1, y = g2, fill = value)) + 
       geom_raster() + 
-      facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+      facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), 
+                   cols = vars(IntIn1, Interference), 
+                   nest_line = element_line(), 
+                   solo_line = T,
+                   render_empty = F) + 
       xlab(expression(paste(gamma[1]))) +
       ylab(expression(paste(gamma[2]))) +
       scale_fill_viridis() + 
@@ -418,6 +473,11 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
     
     ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_coverage.png'), width = 9, height = 9)
   }else{
+    covdf = fig2df %>% 
+      pivot_longer(c(colname_boot,colname_ana)) %>% 
+      mutate(name = case_when(name == colname_boot ~ 'bootstrap',
+                              name == colname_ana ~ 'analytical'))
+    
     ggplot(covdf, aes(x = g, y = value, colour = name)) + 
       geom_point(alpha = 0.5) + 
       facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
@@ -428,14 +488,15 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   }
   
   #BIAS PLOT
-  colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
-  fig2df$bias = fig2df[,colname_bias]
+
   
   if(bivar){
-    ggplot(data = fig2df, aes(x = g1, y = g2, fill = bias)) + 
+    colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
+    dd$bias = dd[,colname_bias]
+    ggplot(data = dd, aes(x = g1, y = g2, fill = bias)) + 
       geom_raster() + 
       facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), 
-                   cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+                   cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T, render_empty = F) + 
       xlab(expression(paste(gamma[1]))) +
       ylab(expression(paste(gamma[2]))) +
       scale_fill_viridis() + 
@@ -445,9 +506,15 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
     ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_bias.png'), width = 9, height = 9)
     
   }else{
+    colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
+    fig2df$bias = fig2df[,colname_bias]
     ggplot(fig2df, aes(x = g, y = bias)) + 
       geom_point(alpha = 0.5) + 
-      facet_nested(rows = vars(gamma_ind, Conc), cols = vars(IntIn1, Interference), nest_line = element_line(), solo_line = T) + 
+      facet_nested(rows = vars(gamma_ind, Conc), 
+                   cols = vars(IntIn1, Interference), 
+                   nest_line = element_line(), 
+                   solo_line = T, 
+                   render_empty = F) + 
       ylab('Bias') + 
       xlab(TeX(r'(\gamma)')) + 
       geom_hline(yintercept = 0)

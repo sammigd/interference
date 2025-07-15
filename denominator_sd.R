@@ -15,7 +15,7 @@
 
 #test_trt = rbinom(20,1, .4)
 
-calc_denominator_sd2 <- function(A, fix_phi = T, pop_p_trt) { #d i want to include dta as an input?
+calc_denominator_sd2 <- function(A, fix_phi = T, pop_p_trt, alpha) { #d i want to include dta as an input?
   
   #testing
   #A = df$trt[df$cluster == 2]

@@ -17,7 +17,7 @@ fig_loc = "~/project/cai/figures/ms_figs_diffusion"
 figloc2 = 'ms_figs_diffusion'
 
 #set the folder where the simulation results are
-setwd("~/project/cai/ms_diffusion_2023nov17_wtruth")
+setwd("~/project/cai/ms_diffusion_2024may11")
 
 #load in the diffusion truth simulation results
 #load('~/project/cai/Y0_truth_sim_df.Rsave')
@@ -39,7 +39,7 @@ table(str_remove(alliters, word(alliters, sep = '_')))
 parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-7]
 
 
-gl = seq(from = -.5, to = .5, length.out = 33)
+gl = seq(from = -.2, to = .2, length.out = 33)
 ngl = rep(0, 33)
 gamma_list = rbind(rep(0, 33),
                    c(ngl, gl),
@@ -144,7 +144,7 @@ bigbiastab = pick_var('a', bigbiastab) #this makes CIs
 
 
 for(i in  c('DE', 'IE0', 'IE1', 'OE')){
-
+  #i = 'OE'
   plot_df = make_ms_figtab(bigbiastab, effect = i, diffusion = T)
   fig2df = plot_df$fig2df
   effect = plot_df$effect

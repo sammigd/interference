@@ -288,7 +288,7 @@ make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
   fig2df = bigbiastab %>%
     mutate(lb = lbx, ub = ubx)
   
-  a = 'No Interference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=0)'
+  a = 'No Interference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=0; \U03B2' %p% subsc('5') %p% '=0)'
   b = 'Homogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=1; \U03B2' %p% subsc('4') %p% '=0)'
   c = 'Moderate \nHeterogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=1)'
   d = 'Strong \nHeterogeneous \nInterference\n (\U03B2' %p% subsc('3') %p% '=0; \U03B2' %p% subsc('4') %p% '=2)'

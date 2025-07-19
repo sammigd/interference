@@ -3,25 +3,19 @@
 get_het_ie <- function(dta, gamma_numer, cov_cols, 
                        beta_0 = NULL, beta_1 = NULL, beta_2 = NULL, beta_3 = NULL, beta_4 = NULL, beta_5 = beta_5,
                        alpha, alpha_re_bound = 10, diffusion = F, diffusion_p = NULL, nn){
-  #beta_3  = 1
-  #beta_2 = 0
-  #beta_4 = 2
+
   clust_avg = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer), 2))
   clust_avg_oe = array(0, dim = c(length(unique(dta$neigh)), ncol(gamma_numer)))
   
-  nn = nn #nn =2
+  nn = nn 
   for (sim in 1:nn){
     print(paste0('start truth sim #', sim))
-    #sim = 1
     for (clus in unique(dta$neigh)){ #for each cluster
       if(clus %% 50 ==0){print(paste0('cluster #', clus))}
-      #clus = 1
       mini = dta %>% filter(neigh == clus)
       Xj = mini[,cov_cols]
     
       for (g in 1:ncol(gamma_numer)){
-        #if(g %% 10 ==0){print(paste0('gamma #', g))}
-        #g = 1
         gamma_use = gamma_numer[,g]
         lin_pred <- cbind(1, as.matrix(Xj)) %*% gamma_use
         
@@ -30,6 +24,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
         
         probs = expit(lin_pred + re_alpha)
         new_Aj = rbinom(length(probs),1,probs) 
+        
         #redraw if no variation in Aj
         if(sum(new_Aj) == length(probs) | sum(new_Aj) == 0){new_Aj = rbinom(length(probs),1,probs)}
         if(sum(new_Aj) == length(probs) | sum(new_Aj) == 0){new_Aj = rbinom(length(probs),1,probs)}
@@ -39,25 +34,20 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           Tprimej = sum(new_Aj*Xj[,1]) / sum(new_Aj)
           Tprimej2 = sum(new_Aj*Xj[,2]) / sum(new_Aj)
           
-          
           #outcome model
           mini$pot_out = beta_0 + beta_1*new_Aj + 
             (as.matrix(Xj, ncol = 3) %*% c(beta_2, 0, 0)) + 
             beta_3*new_Tj + beta_4*Tprimej + beta_5*Tprimej2
-          #if(is.na(sum(Tprimej))){print('tjprime nan'); print(Tprimej); print(new_Aj); print(Xj[,1])}
         }
         if(diffusion == T){
-          #print('diff true')
           mini$Aij = new_Aj
           #CALCULATE Y USING A
           mini$is_center_trted <- rep(mini %>% slice(1) %>% pull(Aij), each = 5)
           mini$Tij <- rep(mini %>% summarise(Tij = sum(Aij)) %>% pull(Tij), each = 5)
-          #print(mini)
-          
+
           mini = mini %>%
             mutate(n_untrt_alter = sum(Aij==0 & X1ij==0 & is_center_trted == 1))# %>%
-          #print(mini)
-         
+
           if(F){
             mini = mini %>%
               mutate(pot_out = case_when(Aij == 1 ~ 1, #treated node
@@ -69,13 +59,6 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
                                          Aij == 0 & X1ij == 0 & is_center_trted == 1 ~ as.numeric(rbinom(n_untrt_alter, 1, diffusion_p)))) #change the first 1 to number of rows
           }
           
-          #mini$pot_outcome = ifelse(mini$Aij == 1, 1, #treated node
-          #                          ifelse(mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 0, 0, #untrt alter where center IS NOT treated
-          #                                 ifelse()))
-          
-          #treated node
-          #print('here is the new part')
-          #print(mini$Tij)
           mini$pot_out[mini$Aij == 1] <- 1
           
           #untrt alter where center IS NOT treated
@@ -86,9 +69,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           
           #untrt alter where center IS treated
           mini$pot_out[mini$Aij == 0 & mini$X1ij == 0 & mini$is_center_trted == 1] <- as.numeric(rbinom(mini$n_untrt_alter, 1, diffusion_p))
-          #print('the new part is over')
         }
-        #print('*')
 
           
         Yj_a0 = mean(mini$pot_out[new_Aj == 0]) 

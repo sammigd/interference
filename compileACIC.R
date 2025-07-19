@@ -11,12 +11,14 @@ library(latex2exp)
 
 
 bivar = F
+diffusion = F
+
 setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
 source('interference/compile_helper_funcs.R')
 
 if(bivar){fig_loc = "~/project/cai/figures/ms_figs_bivar_two"}
 #if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar"}
-if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
+if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_bigalpha"}
 
 
 
@@ -72,9 +74,8 @@ if(bivar){
 #powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
 
 #ms stuff!!!
-if(!bivar){setwd("~/project/cai/ms_univar_2024may15_smallalpha")}
+if(!bivar){setwd("~/project/cai/ms_univar2025jul9_largealpha")}
 #if(!bivar){setwd("~/project/cai/ms_univar_2024may15")}
-
 
 if(bivar){setwd("~/project/cai/ms_bivar_2024jun01")}
 
@@ -376,7 +377,7 @@ testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe))
 
 for(i in c('DE', 'IE0', 'IE1', 'OE')){
   #i = 'OE'
-  plot_df = make_ms_figtab(bigbiastab, effect = i)
+  plot_df = make_ms_figtab(bigbiastab, effect = i, diffusion = F)
   fig2df = plot_df$fig2df
   
   #ylabel = plot_df$ylab

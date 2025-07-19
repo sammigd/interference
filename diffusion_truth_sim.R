@@ -13,7 +13,7 @@ library(rje)
 #gamma_list = cbind(gamma_list, c(0,0,0))
 #gamma_numer = gamma_list
 
-gl = seq(from = -.5, to = .5, length.out = 33)
+gl = seq(from = -.2, to = .2, length.out = 33)
 ngl = rep(0, 33)
 gamma_list = rbind(rep(0, 33),
                    c(ngl, gl),

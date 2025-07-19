@@ -1,26 +1,23 @@
+#FUNCTIONS USED IN TO COMPILE SIMULATION RESULTS
+
+
 #calc means over 600 simulations for each scenario
 get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F, truth_use = NULL){
-  #which_iter = 1
-  
+
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
-  #print(ngam)
   for(i in e.names){
     assign(i, array(NA, dim = c(ngam, length(iters)), dimnames(list('gammas', 'iters'))))
   }
 
   #EXTRACT ALL THE ESTIMATES FROM THE ITERATIONS
   for (i in 1:length(iters)){
-    #i = 1
     wk = iters[i]
-    #wk = "scenario255_1_1_0.65.RSave"
     load(wk)
     
     ###############################
     # POTENTIAL OUTCOMES ##########
     ###############################
     #HT
-    #print(str(y0_ht))
-    #print(str(test$unadj))
     y0_ht[,i] = test$unadj[1,]
     y1_ht[,i] = test$unadj[2,]
     
@@ -41,7 +38,6 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
     
     #HT Y COV
     y_ht_covar[,i] = test$ht_yhat_var[1,2,]
-    
     
     
     ###############################
@@ -120,17 +116,13 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
         true_ie0[,i] = 0
       }
     }else{
-      #true_de[,i] = truth_use$true_de#test$truth$de
-      #print(truth_use$true_y0)
-      #print(str(true_y0[,i]))
-      #print(str(truth_use$true_y0))
-      true_y0[,i] = truth_use$true_y0#test$truth$y0
-      true_y1[,i] = truth_use$true_y1#test$truth$y1
+      true_y0[,i] = truth_use$true_y0
+      true_y1[,i] = truth_use$true_y1
       true_de[,i] = truth_use$true_y1 - truth_use$true_y0
       
       true_ie0[,i] = truth_use$true_ie0
       true_ie1[,i] = truth_use$true_ie1
-      true_oe[,i] = truth_use$true_oe #test$truth$oe[,67] #NA#truth_use$true_oe #NA
+      true_oe[,i] = truth_use$true_oe 
       true_y[,i] = truth_use$true_y
     }
 
@@ -203,7 +195,6 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
   
   #take the mean of the 600 simulations
   for(i in 1:length(e.names)){
-    #print(str(estimates[[i]]))
     est = estimates[[i]]
     if(e.names[i] == 'y0_ht_mcvar' | e.names[i] == 'y1_ht_mcvar'){cal = apply(est, 1, var)}else{cal = apply(est, 1, mean, na.rm =T)}
     assign(e.names[i], cal)
@@ -230,7 +221,7 @@ get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F,
 
 
 
-#pick wheterh to use boot or analytical CI's
+#pick whether to use boot or analytical CI's
 pick_var <- function(v = c('a', 'b'), bigbiastab){
   if (v == 'b'){
     bigbiastab = bigbiastab %>% 
@@ -277,11 +268,7 @@ pick_var <- function(v = c('a', 'b'), bigbiastab){
 
 
 make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
-  #if(effect == 'OE'){bigbiastab = bigbiastab %>% pivot_longer(c(true_oe, oe_haj)); ylab = 'Overall Effect'}
-  #if(effect == 'DE'){bigbiastab = bigbiastab %>% pivot_longer(c(true_de, de_haj)); ylab = 'Direct Effect'}
-  #if(effect == 'IE0'){bigbiastab = bigbiastab %>% pivot_longer(c(true_ie0, ie0_haj)); ylab = 'Indirect Effect (0)'}
-  #if(effect == 'IE1'){bigbiastab = bigbiastab %>% pivot_longer(c(true_ie1, ie1_haj)); ylab = 'Indirect Effect (1)'}
-  
+
   lbx = bigbiastab %>% pull(names(bigbiastab)[str_detect(names(bigbiastab), paste0(str_to_lower(effect), '_haj_ana_lb'))])
   ubx = bigbiastab %>% pull(names(bigbiastab)[str_detect(names(bigbiastab), paste0(str_to_lower(effect), '_haj_ana_ub'))])
   
@@ -325,8 +312,6 @@ make_ms_figtab <- function(bigbiastab, effect, diffusion = F){
     mutate(Conc = case_when(concordance == '0' | concordance == 0 | concordance == '0.RSave' ~ a,
                             concordance == 0.65 | concordance == '0.8' | concordance == '0.65' | concordance == '0.65.RSave' ~ b)) %>%
     mutate(Conc = factor(Conc, levels = c(a,b))) %>%#,
-           #name = ifelse(str_detect(name, 'haj'), paste0('Hajek ', effect), paste0('True ', effect)),
-           #name = factor(name, levels = c( paste0('True ', effect),paste0('Hajek ', effect)))) %>%
     mutate(gamma_ind = case_when(gamma_ind == 'X1' ~ 'Target X' %p% supsc('(1)'),
                                  gamma_ind == 'X2' ~ 'Target X' %p% supsc('(2)')))
   return(list(fig2df = fig2df, effect = effect))

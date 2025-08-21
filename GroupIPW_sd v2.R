@@ -4,12 +4,7 @@
 #'
 #' @param dta Data frame including treatment, outcome and covariates.
 #' @param cov_cols The indices including the covariates of the ps model.
-#' @param phi_hat A list with two elements. The first one is a vector of
-#' coefficients of the ps, and the second one is the random effect variance.
-#' If the second element is 0, the propensity score excludes random effects.
 #' @param gamma_numer The coefficients of the ps model in the numerator.
-#' If left NULL and estimand is 1, the coefficients in phi_hat will be used
-#' instead.
 #' @param alpha The values of alpha for which we want to estimate the group
 #' average potential outcome.
 #' @param neigh_ind List. i^{th} element is a vector with the row indices of
@@ -25,31 +20,24 @@
 #' @param keep_re_alpha Logical. If set to TRUE the "random" effect that makes
 #' the average probability of treatment equal to alpha will be returned along
 #' with the estimated group average potential outcome.
-#' @param estimand Character, either '1' or '2.' If 1 is specified, then the
-#' estimand with numerator depending on covariates is estimated. If estimand
-#' is set equal to 2, the numerator considered is the product of Bernoulli.
 #' @param verbose Whether printing of progress is wanted. Defaults to TRUE.
 #' 
 #' @export
 GroupIPW_sd2 <- function(dta, cov_cols, gamma_numer = NULL, alpha,
                      neigh_ind = NULL, trt_col = NULL, out_col = NULL, 
                      alpha_re_bound = 10, integral_bound = 10,
-                     keep_re_alpha = FALSE, estimand = c('1', '2'),
+                     keep_re_alpha = FALSE,
                      verbose = TRUE, propensity_score = FALSE, loud_denom = FALSE, halfwt = F, 
                      fix_phi = T, const_size = F, cts_trt = F) {
   
   #testing
   #alpha_re_bound = 15; verbose = F;gamma_numer = gamma_list; loud_denom = F; fix_phi = T 
   
-  estimand <- match.arg(estimand)
   integral_bound <- abs(integral_bound)
   alpha_re_bound <- abs(alpha_re_bound)
   dta <- as.data.frame(dta)
   
   pop_p_trt = sum(dta[,trt_col])/nrow(dta)
-  
-  # We only return the ksi's if we are estimating estimand 1.
-  keep_re_alpha <- keep_re_alpha & (estimand == '1')
   
   # Specifying neigh_ind will avoid re-running the following lines.
   if (is.null(neigh_ind)) {

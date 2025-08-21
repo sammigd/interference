@@ -19,6 +19,7 @@ source('interference/compile_helper_funcs.R')
 if(bivar){fig_loc = "~/project/cai/figures/ms_figs_bivar_two"}
 #if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar"}
 if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_bigalpha"}
+#if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
 
 
 
@@ -74,7 +75,9 @@ if(bivar){
 #powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
 
 #ms stuff!!!
-if(!bivar){setwd("~/project/cai/ms_univar2025jul9_largealpha")}
+if(!bivar){setwd("~/project/cai/ms_univar_2025jul9_largealpha")}
+#if(!bivar){setwd("~/project/cai/ms_univar_2025jul9_smallalpha")}
+
 #if(!bivar){setwd("~/project/cai/ms_univar_2024may15")}
 
 if(bivar){setwd("~/project/cai/ms_bivar_2024jun01")}

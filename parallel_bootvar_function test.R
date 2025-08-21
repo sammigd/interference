@@ -81,7 +81,7 @@ BootVar_sd <- function(dta, B = 150, alpha, ps = c('true', 'est'), cov_cols,
     
     ygroup_boot <- GroupIPW_sd2(dta = boot_dta, cov_cols = cov_cols, 
                                 alpha = alpha, trt_col = trt_col, out_col = out_col,
-                                estimand = '1', alpha_re_bound = 20, verbose = F,
+                                alpha_re_bound = 20, verbose = F,
                                 gamma_numer = gamma_list,
                                 neigh_ind = neigh_ind,
                                 loud_denom = F, fix_phi = T, const_size = T)

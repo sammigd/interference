@@ -37,7 +37,7 @@ get_het_ie <- function(dta, gamma_numer, cov_cols,
           #outcome model
           mini$pot_out = beta_0 + beta_1*new_Aj + 
             (as.matrix(Xj, ncol = 3) %*% c(beta_2, 0, 0)) + 
-            beta_3*new_Tj + beta_4*Tprimej + beta_5*Tprimej2
+            beta_3*new_Tj + beta_4*Tprimej + beta_5*Tprimej2 + beta_6*new_Aj*ifelse(nrow(mini) == 15, 1, 0)
         }
         if(diffusion == T){
           mini$Aij = new_Aj

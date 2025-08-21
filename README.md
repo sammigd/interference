@@ -2,7 +2,7 @@
 This code accompanies the manuscript https://arxiv.org/abs/2504.07305, by Samantha G Dean, Georgia Papadogeorgou, and Laura Forastiere.
 
 # Overview
-Users can run model_sim.R to recreate the simulated results from the manuscript, or cai_application.R to recreate the application results from the manuscript. 
+Users can run model_sim.R and diffusion.sim to recreate the simulated results from the manuscript, or cai_application.R to recreate the application results from the manuscript. 
 
 # Script Directory
 CalcHeterogeneousTrueIE.R

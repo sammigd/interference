@@ -1,10 +1,10 @@
 # Effective treatment allocation strategies under partial interference
 This code accompanies the manuscript https://arxiv.org/abs/2504.07305, by Samantha G Dean, Georgia Papadogeorgou, and Laura Forastiere.
 
-#Overview
+# Overview
 Users can run model_sim.R to recreate the simulated results from the manuscript, or cai_application.R to recreate the application results from the manuscript. 
 
-#Script Directory
+# Script Directory
 CalcHeterogeneousTrueIE.R
 - creates get_het_ie(), called in model_sim. 
 - calculates the true value of the estimands that the proposed estimators are evaluated compared to

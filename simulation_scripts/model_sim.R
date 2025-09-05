@@ -31,7 +31,7 @@ source('interference/analysis_scripts/ypop_sd.R')
 source('interference/analysis_scripts/hajek_adj.R')
 source('interference/analysis_scripts/de_sd.R')
 source('interference/analysis_scripts/ie_sd.R')
-source('interference/analysis_scripts/CalcHeterogenousTrueIE.R')
+source('interference/analysis_scripts/CalcHeterogeneousTrueIE.R')
 source('interference/analysis_scripts/oe_sd.R')
 #source('scripts/diffusion_truth.R')
 

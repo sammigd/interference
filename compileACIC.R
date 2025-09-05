@@ -1,5 +1,4 @@
 #compile big sim results
-#install.packages('tidyverse')
 library(tidyverse)
 library(viridis)
 library(ggh4x)
@@ -9,21 +8,35 @@ library(here)
 library(ggplot2)
 library(latex2exp)
 
+###########################################################
+# INPUTS TO SELECT SCENARIO ###############################
+###########################################################
 
-bivar = F
-diffusion = F
+bivar = F #SET INPUT TO SELECT SCENARIO
+
+if(bivar == F){ #SET INPUT TO SELECT SCENARIO (comment out all but one)
+  revision_scenarios = 'og' # univariate - original mod results - alpha = 0.5, clust size = 15
+  #revision_scenarios = 'smallalpha' # univariate - revision addition - alpha = 0.4, clust size = 15
+  #revision_scenarios = 'largealpha' #univariate - revision addition - alpha = 0.6, clust size = 15
+  #revision_scenarios = 'altclus' #univariate - revision addition - alpha = 0.5, clust size = half 10, half 15
+}
+
+diffusion = F #SET INPUT TO SELECT SCENARIO
+
+##################################################
+# END SCENARIO INPUTS TO MANUALLY SET ############
+##################################################
 
 setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
-source('interference/compile_helper_funcs.R')
+source('interference/analysis_scripts/compile_helper_funcs.R')
 
 if(bivar){fig_loc = "~/project/cai/figures/ms_figs_bivar_two"}
-#if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar"}
-if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_bigalpha"}
-#if(!bivar){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
 
+if(!bivar & revision_scenarios == 'og'){fig_loc = "~/project/cai/figures/ms_figs_univar_stdalpha"}
+if(!bivar & revision_scenarios == 'smallalpha'){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
+if(!bivar & revision_scenarios == 'largealpha'){fig_loc = "~/project/cai/figures/ms_figs_univar_bigalpha"}
+if(!bivar & revision_scenarios == 'altclus'){fig_loc = "~/project/cai/figures/ms_figs_univar_altclus"}
 
-
-library(latex2exp)
 
 theme_set(theme_minimal()+
             theme(strip.text = element_text(size = 10),
@@ -33,11 +46,6 @@ theme_set(theme_minimal()+
                   legend.position = 'bottom',
                   panel.spacing = unit(.5, "lines"),
                   strip.background = element_rect(color = rgb(0,0,0,0))))
-
-
-#load("/gpfs/ysm/project/forastiere/sgd37/cai/figures/oct03wkspc.Rsave")
-
-#save.image("/gpfs/ysm/project/forastiere/sgd37/cai/figures/nov13wkspc.Rsave")
 
 
 #univar heterogeneity
@@ -56,7 +64,6 @@ if(!bivar){
 }
 
 
-
 #bivar heterogeneity
 if(bivar){
   ngam = 64
@@ -66,43 +73,25 @@ if(bivar){
   
 }
 
-#read in all of the simulations
-#setwd("~/project/cai/florence_tfix5")
-#setwd("~/project/cai/florence_tcheck")
-
-#setwd("~/project/cai/powercalcs")
-#setwd("~/project/cai/florence_g3_3")
-#powercalcs results folder is 200 clusters, 15 members per cluster, epsilon ~ N(0,1)
-
-#ms stuff!!!
-if(!bivar){setwd("~/project/cai/ms_univar_2025jul9_largealpha")}
-#if(!bivar){setwd("~/project/cai/ms_univar_2025jul9_smallalpha")}
-
-#if(!bivar){setwd("~/project/cai/ms_univar_2024may15")}
-
+#set folders to read in raw simulation results
 if(bivar){setwd("~/project/cai/ms_bivar_2024jun01")}
 
+if(!bivar & revision_scenarios == 'og'){setwd("~/project/cai/ms_univar_2025jul9_stdalpha")}
+if(!bivar & revision_scenarios == 'smallalpha'){setwd("~/project/cai/ms_univar_2025jul9_smallalpha")}
+if(!bivar & revision_scenarios == 'largealpha'){setwd("~/project/cai/ms_univar_2025jul9_largealpha")}
+if(!bivar & revision_scenarios == 'altclus'){setwd("~/project/cai/ms_univar_2025aug17_altclus")}
 
 
 alliters = list.files()
 
 #load(alliters[1])
 
-
-#bigsims_homogtest_bigoe - folder with 200 sims of b3 = 3 to see if its a magnitude issue
-#bigsims_threecovar - results for ACIC
-
-#save.image("~/project/cai/bigsims_threecovar_full.Rsave")
-#load("~/project/cai/bigsims_threecovar_full.Rsave")
-#load(alliters[1])
-
-#parameter sets 
+# CHECK PARAMETERS INCLUDED IN SIMUALTIONS IN OUTPUT
 table(str_remove(alliters, word(alliters, sep = '_')))
-parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-1]
+parmlist = unique(str_remove(alliters, word(alliters, sep = '_')))#[-25]
+print(parmlist) # CHECK THAT ALL THE .RSAVE FILE NAMES LOOK RIGHT
 #parmlist = parmlist[7]
 
-#will want to change this to looping over each of the parmlist elements i think
-#iters = alliters[str_detect(alliters, parmlist[9])]
 
 e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
             'direct_haj', 'direct_analyticalvar_haj', 'direct_bootvar_haj',
@@ -125,131 +114,137 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
 #######################################
 # POWER TESTING FOR FLAT OE ###########
 #######################################
-source('~/project/cai/interference/oe_stattest.R')
-
-#get counts
-table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
-sigresults = c()
-sigresults_ie1 = c()
-sigresults_ie0 = c()
-sigresults_de = c()
-empty = matrix(nrow = length(alliters), ncol = 3)
-empty_other = matrix(nrow = length(alliters), ncol = 4)
-
-ind = 1
-
-#for each set of parameters
-for (pset in 1:length(parmlist)){
-  iters = alliters[str_detect(alliters, parmlist[pset])]
+# this section of code calculates the power of the proposed statistical test
+# it takes a while to run, so don't usually run it for supplemental analyses
+if(F){ 
+  source('~/project/cai/interference/oe_stattest.R')
   
-  #for each simulation
-  for (i in 1:length(iters)){
-    load(iters[i])
-    if(is.na(test$oe[1,1])){next}
+  #get counts
+  table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
+  sigresults = c()
+  sigresults_ie1 = c()
+  sigresults_ie0 = c()
+  sigresults_de = c()
+  empty = matrix(nrow = length(alliters), ncol = 3)
+  empty_other = matrix(nrow = length(alliters), ncol = 4)
+  
+  ind = 1
+  
+  #for each set of parameters
+  for (pset in 1:length(parmlist)){
+    iters = alliters[str_detect(alliters, parmlist[pset])]
     
-    #run sig test for that simulation
-    testresult = oe_sigtest(test$oe, test$oe_cov)
-    testresult_ie1 = oe_sigtest(test$indirect1, test$indirect_cov[,,2])
-    testresult_ie0 = oe_sigtest(test$indirect0, test$indirect_cov[,,1])
-    testresult_de = oe_sigtest(test$direct, test$direct_cov)
+    #for each simulation
+    for (i in 1:length(iters)){
+      load(iters[i])
+      if(is.na(test$oe[1,1])){next}
+      
+      #run sig test for that simulation
+      testresult = oe_sigtest(test$oe, test$oe_cov)
+      testresult_ie1 = oe_sigtest(test$indirect1, test$indirect_cov[,,2])
+      testresult_ie0 = oe_sigtest(test$indirect0, test$indirect_cov[,,1])
+      testresult_de = oe_sigtest(test$direct, test$direct_cov)
+      
+      sigresults = append(sigresults, testresult$accept)
+      sigresults_ie1 = append(sigresults_ie1, testresult_ie1$accept)
+      sigresults_ie0 = append(sigresults_ie0, testresult_ie0$accept)
+      sigresults_de = append(sigresults_de, testresult_de$accept)
+      
+      
+      #maxlist = append(maxlist, testresult$diff)
+      empty[ind,1] = parmlist[pset]
+      empty[ind,2] = testresult$accept #is sig?
+      empty[ind,3] = testresult$diff #max difference
+      
+      empty_other[ind,1] = parmlist[pset]
+      empty_other[ind,2] = testresult_ie0$accept
+      empty_other[ind,3] = testresult_ie1$accept
+      empty_other[ind,4] = testresult_de$accept
+      
+      ind = ind + 1
+    }
+    print(pset)
+    print('is done')
+    save(empty_other, file = paste0(fig_loc, '/bivar_power_ie_de.RData'))
+    save(empty, file = paste0(fig_loc, '/bivar_power.RData'))
     
-    sigresults = append(sigresults, testresult$accept)
-    sigresults_ie1 = append(sigresults_ie1, testresult_ie1$accept)
-    sigresults_ie0 = append(sigresults_ie0, testresult_ie0$accept)
-    sigresults_de = append(sigresults_de, testresult_de$accept)
-    
-    
-    #maxlist = append(maxlist, testresult$diff)
-    empty[ind,1] = parmlist[pset]
-    empty[ind,2] = testresult$accept #is sig?
-    empty[ind,3] = testresult$diff #max difference
-    
-    empty_other[ind,1] = parmlist[pset]
-    empty_other[ind,2] = testresult_ie0$accept
-    empty_other[ind,3] = testresult_ie1$accept
-    empty_other[ind,4] = testresult_de$accept
-    
-    ind = ind + 1
   }
-  print(pset)
-  print('is done')
-  save(empty_other, file = paste0(fig_loc, '/bivar_power_ie_de.RData'))
-  save(empty, file = paste0(fig_loc, '/bivar_power.RData'))
-
-}
-
-load(file = paste0(fig_loc, '/bivar_power.RData') )
-load(file = paste0(fig_loc, '/bivar_power_ie_de.RData') )
-
-empty_other = data.frame(empty_other)
-names(empty_other) = c('parms', 'ie0_accept', 'ie1_accept', 'de_accept') 
-
-de_power = empty_other %>% dplyr::select(parms, de_accept) %>%
-  group_by(parms, de_accept) %>% summarise(Freq = n()) %>%
-  pivot_wider(names_from = de_accept, values_from = Freq, values_fill = 0) %>%
-  mutate(total = `FALSE` + `TRUE`,
-         acc_rate =  `TRUE` / total,
-         de_rej_rate = `FALSE` / total) %>% dplyr::select(parms, de_rej_rate)
-
-ie0_power = empty_other %>% dplyr::select(parms, ie0_accept) %>%
-  group_by(parms, ie0_accept) %>% summarise(Freq = n()) %>%
-  pivot_wider(names_from = ie0_accept, values_from = Freq, values_fill = 0) %>%
-  mutate(total = `FALSE` + `TRUE`,
-         acc_rate =  `TRUE` / total,
-         ie0_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie0_rej_rate)
-
-ie1_power = empty_other %>% dplyr::select(parms, ie1_accept) %>%
-  group_by(parms, ie1_accept) %>% summarise(Freq = n()) %>%
-  pivot_wider(names_from = ie1_accept, values_from = Freq, values_fill = 0) %>%
-  mutate(total = `FALSE` + `TRUE`,
-         acc_rate =  `TRUE` / total,
-         ie1_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie1_rej_rate)
-
-other_power = merge(de_power, ie0_power, by = 'parms') %>% 
-  merge(ie1_power, by = 'parms') %>%
-  separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
-  mutate(b5 = substr(b5, 1,1)) %>%
-  arrange(b4, b5, b3, concordance) %>%
-  rename(de_level = de_rej_rate) %>%
-  mutate(Ie0_Level = ifelse(b4==0 & b5==0, round(ie0_rej_rate,2), ' '),
-         Ie0_Power = ifelse(b4!=0 | b5 !=0, round(ie0_rej_rate,2), ' '),
-         Ie1_Level = ifelse(b4==0 & b5==0, round(ie1_rej_rate,2), ' '),
-         Ie1_Power = ifelse(b4!=0 | b5 !=0, round(ie1_rej_rate,2), ' ')) %>%
-  dplyr::select(b3, b4, b5, concordance, de_level, Ie0_Level, Ie0_Power, Ie1_Level, Ie1_Power)
-
-print(xtable(other_power, type = "latex"), file = "../power_table_ie_de.tex", include.rownames = F)
-
-
-empty = data.frame(empty)
-names(empty) = c('parms', 'TF', 'teststat')
-str(empty)
-teststattable = empty %>% 
-  mutate(teststat = as.numeric(teststat)) %>%
-  group_by(parms) %>% summarise(teststat = mean(teststat, na.rm = T))
-
-summary_tab = data.frame(table(empty$parms, empty$TF)) %>% 
-  pivot_wider(names_from = Var2, values_from = Freq) %>%
-  mutate(total = `FALSE` + `TRUE`,
-         acc_rate =  `TRUE` / total,
-         rej_rate = `FALSE` / total)# %>%
+  
+  load(file = paste0(fig_loc, '/bivar_power.RData') )
+  load(file = paste0(fig_loc, '/bivar_power_ie_de.RData') )
+  
+  empty_other = data.frame(empty_other)
+  names(empty_other) = c('parms', 'ie0_accept', 'ie1_accept', 'de_accept') 
+  
+  de_power = empty_other %>% dplyr::select(parms, de_accept) %>%
+    group_by(parms, de_accept) %>% summarise(Freq = n()) %>%
+    pivot_wider(names_from = de_accept, values_from = Freq, values_fill = 0) %>%
+    mutate(total = `FALSE` + `TRUE`,
+           acc_rate =  `TRUE` / total,
+           de_rej_rate = `FALSE` / total) %>% dplyr::select(parms, de_rej_rate)
+  
+  ie0_power = empty_other %>% dplyr::select(parms, ie0_accept) %>%
+    group_by(parms, ie0_accept) %>% summarise(Freq = n()) %>%
+    pivot_wider(names_from = ie0_accept, values_from = Freq, values_fill = 0) %>%
+    mutate(total = `FALSE` + `TRUE`,
+           acc_rate =  `TRUE` / total,
+           ie0_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie0_rej_rate)
+  
+  ie1_power = empty_other %>% dplyr::select(parms, ie1_accept) %>%
+    group_by(parms, ie1_accept) %>% summarise(Freq = n()) %>%
+    pivot_wider(names_from = ie1_accept, values_from = Freq, values_fill = 0) %>%
+    mutate(total = `FALSE` + `TRUE`,
+           acc_rate =  `TRUE` / total,
+           ie1_rej_rate = `FALSE` / total) %>% dplyr::select(parms, ie1_rej_rate)
+  
+  other_power = merge(de_power, ie0_power, by = 'parms') %>% 
+    merge(ie1_power, by = 'parms') %>%
+    separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+    mutate(b5 = substr(b5, 1,1)) %>%
+    arrange(b4, b5, b3, concordance) %>%
+    rename(de_level = de_rej_rate) %>%
+    mutate(Ie0_Level = ifelse(b4==0 & b5==0, round(ie0_rej_rate,2), ' '),
+           Ie0_Power = ifelse(b4!=0 | b5 !=0, round(ie0_rej_rate,2), ' '),
+           Ie1_Level = ifelse(b4==0 & b5==0, round(ie1_rej_rate,2), ' '),
+           Ie1_Power = ifelse(b4!=0 | b5 !=0, round(ie1_rej_rate,2), ' ')) %>%
+    dplyr::select(b3, b4, b5, concordance, de_level, Ie0_Level, Ie0_Power, Ie1_Level, Ie1_Power)
+  
+  print(xtable(other_power, type = "latex"), file = "../power_table_ie_de.tex", include.rownames = F)
+  
+  
+  empty = data.frame(empty)
+  names(empty) = c('parms', 'TF', 'teststat')
+  str(empty)
+  teststattable = empty %>% 
+    mutate(teststat = as.numeric(teststat)) %>%
+    group_by(parms) %>% summarise(teststat = mean(teststat, na.rm = T))
+  
+  summary_tab = data.frame(table(empty$parms, empty$TF)) %>% 
+    pivot_wider(names_from = Var2, values_from = Freq) %>%
+    mutate(total = `FALSE` + `TRUE`,
+           acc_rate =  `TRUE` / total,
+           rej_rate = `FALSE` / total)# %>%
   #separate(Var1, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
   #mutate(b5 = substr(b5, 1,1))
-save(summary_tab, file = paste0(fig_loc, '/univar_power.RData') )
-
-power_tab = teststattable %>% 
-  merge(summary_tab, by.x = 'parms', by.y = 'Var1')  %>%
-  separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
-  mutate(b5 = substr(b5, 1,1)) %>% dplyr::select(-x, -`TRUE`, -`FALSE`, -total) %>%
-  arrange(b4, b5, b3, concordance) %>%
-  mutate(Level = ifelse(b4==0 & b5==0, round(rej_rate,2), ' '),
-         Power = ifelse(b4!=0 | b5 !=0, round(rej_rate,2), ' ')) %>%
-  dplyr::select(b3, b4, b5, concordance, teststat, Level, Power)
+  save(summary_tab, file = paste0(fig_loc, '/univar_power.RData') )
   
-print(xtable(power_tab, type = "latex"), file = "power_table.tex", include.rownames = F)
+  power_tab = teststattable %>% 
+    merge(summary_tab, by.x = 'parms', by.y = 'Var1')  %>%
+    separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+    mutate(b5 = substr(b5, 1,1)) %>% dplyr::select(-x, -`TRUE`, -`FALSE`, -total) %>%
+    arrange(b4, b5, b3, concordance) %>%
+    mutate(Level = ifelse(b4==0 & b5==0, round(rej_rate,2), ' '),
+           Power = ifelse(b4!=0 | b5 !=0, round(rej_rate,2), ' ')) %>%
+    dplyr::select(b3, b4, b5, concordance, teststat, Level, Power)
+  
+  print(xtable(power_tab, type = "latex"), file = "power_table.tex", include.rownames = F)
+  
+}
 
 
-
-#########
+###################################################
+# CODE TO READ IN AND COMBINE SIMULATION RESULTS ##
+###################################################
 #if(!bivar){beta5 = 0; b5 = 0}
 
 bigbiastab = array(NA, dim = c(0, 30))
@@ -272,80 +267,79 @@ for (parms in 1:length(parmlist)){
     assign(e.names[i], estimates[[i]])
   }
   biastab = data.frame(#g = gamma_list[2,]) %>% #
-      g = c(rep(gamma_list[2,1:floor(ngam/3)], 3), 0),
-      g1 = gamma_list[2,],
-      g2 = gamma_list[3,],
-      gamma_ind = c(rep('X1', floor(ngam/3)), rep('X2', floor(ngam/3)), rep('X3', floor(ngam/3)), 'X1')) %>% 
+    g = c(rep(gamma_list[2,1:floor(ngam/3)], 3), 0),
+    g1 = gamma_list[2,],
+    g2 = gamma_list[3,],
+    gamma_ind = c(rep('X1', floor(ngam/3)), rep('X2', floor(ngam/3)), rep('X3', floor(ngam/3)), 'X1')) %>% 
     mutate(#True parameter values
-           true_oe = true_oe, true_ie1 = true_ie1, true_ie0 = true_ie0, 
-           true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
-           #estimated parameter values
-           de_ht = direct_ht, de_haj = direct_haj,
-           ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
-           oe_ht = oe_ht, oe_haj = oe_haj,
-           y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
-           y0_ht_var = y0_ht_var, y1_ht_var = y1_ht_var,y_ht_covar = y_ht_covar,
-           y0_ht_bootvar = y0_ht_bootvar, y1_ht_bootvar = y1_ht_bootvar,
-           y0_ht_mcvar = y0_ht_mcvar, y1_ht_mcvar = y1_ht_mcvar, 
-           #bias
-           bias_de_ht = (direct_ht - beta_1), bias_de_haj = (direct_haj - beta_1),
-           bias_oe_ht = (oe_ht - true_oe), bias_oe_haj = (oe_haj - true_oe),
-           bias_ie0_ht = (indirect0_ht - true_ie0),  bias_ie1_ht = (indirect1_ht - true_ie1),
-           bias_ie0_haj = (indirect0_haj - true_ie0), bias_ie1_haj = (indirect1_haj - true_ie1),
-           bias_y0_ht = y0_ht - true_y0,
-           bias_y1_ht = y1_ht - true_y1,
-           bias_y0_haj = y0_haj - true_y0,
-           bias_y1_haj = y1_haj - true_y1,
-           #labels
-           label = pretty_parm, concordance = concordance, b3 = b3, b4 = b4, b5 = b5,
-           #coverage
-           oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
-           oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
-           de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
-           de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
-           ie0_anacoverage_ht = ie0_anacoverage_ht, ie0_anacoverage_haj = ie0_anacoverage_haj,
-           ie0_bootcoverage_ht = ie0_bootcoverage_ht, ie0_bootcoverage_haj = ie0_bootcoverage_haj,
-           ie1_anacoverage_ht = ie1_anacoverage_ht, ie1_anacoverage_haj = ie1_anacoverage_haj,
-           ie1_bootcoverage_ht = ie1_bootcoverage_ht, ie1_bootcoverage_haj = ie1_bootcoverage_haj,
-           y0_anacoverage_ht = y0_anacoverage_ht, y1_anacoverage_ht = y1_anacoverage_ht,
-           y0_bootcoverage_ht = y0_bootcoverage_ht, y1_bootcoverage_ht = y1_bootcoverage_ht,
-           #variances
-           #OE HT
-           oe_bootvar_ht = oe_bootvar_ht, 
-           oe_analyticalvar_ht = oe_analyticalvar_ht,
-           #OE HAJ
-           oe_bootvar_haj = oe_bootvar_haj, 
-           oe_analyticalvar_haj = oe_analyticalvar_haj,
-           #DE HT
-           de_analyticalvar_ht = direct_analyticalvar_ht, 
-           de_bootvar_ht = direct_bootvar_ht,
-           #DE HAJ
-           de_analyticalvar_haj = direct_analyticalvar_haj,
-           de_bootvar_haj = direct_bootvar_haj,
-           #IE1 HT
-           ie1_analyticalvar_ht = indirect1_analyticalvar_ht, 
-           ie1_bootvar_ht = indirect1_bootvar_ht, 
-           #IE1 HAJ
-           ie1_analyticalvar_haj = indirect1_analyticalvar_haj, 
-           ie1_bootvar_haj = indirect1_bootvar_haj,
-           #IE0 HT
-           ie0_analyticalvar_ht = indirect0_analyticalvar_ht, 
-           ie0_bootvar_ht = indirect0_bootvar_ht, 
-           #IE0 HAJ
-           ie0_analyticalvar_haj = indirect0_analyticalvar_haj, 
-           ie0_bootvar_haj = indirect0_bootvar_haj,
-           #sum wts
-           sum_wts0 = sum_wts0, sum_wts1 = sum_wts1
-           )
+      true_oe = true_oe, true_ie1 = true_ie1, true_ie0 = true_ie0, 
+      true_y0 = true_y0, true_y1 = true_y1, true_de = (true_y1 - true_y0),
+      #estimated parameter values
+      de_ht = direct_ht, de_haj = direct_haj,
+      ie1_ht = indirect1_ht, ie0_ht = indirect0_ht, ie1_haj = indirect1_haj, ie0_haj = indirect0_haj,
+      oe_ht = oe_ht, oe_haj = oe_haj,
+      y1_ht = y1_ht, y1_haj=y1_haj, y0_ht = y0_ht, y0_haj = y0_haj,
+      y0_ht_var = y0_ht_var, y1_ht_var = y1_ht_var,y_ht_covar = y_ht_covar,
+      y0_ht_bootvar = y0_ht_bootvar, y1_ht_bootvar = y1_ht_bootvar,
+      y0_ht_mcvar = y0_ht_mcvar, y1_ht_mcvar = y1_ht_mcvar, 
+      #bias
+      bias_de_ht = (direct_ht - beta_1), bias_de_haj = (direct_haj - beta_1),
+      bias_oe_ht = (oe_ht - true_oe), bias_oe_haj = (oe_haj - true_oe),
+      bias_ie0_ht = (indirect0_ht - true_ie0),  bias_ie1_ht = (indirect1_ht - true_ie1),
+      bias_ie0_haj = (indirect0_haj - true_ie0), bias_ie1_haj = (indirect1_haj - true_ie1),
+      bias_y0_ht = y0_ht - true_y0,
+      bias_y1_ht = y1_ht - true_y1,
+      bias_y0_haj = y0_haj - true_y0,
+      bias_y1_haj = y1_haj - true_y1,
+      #labels
+      label = pretty_parm, concordance = concordance, b3 = b3, b4 = b4, b5 = b5,
+      #coverage
+      oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
+      oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
+      de_anacoverage_ht = de_anacoverage_ht, de_anacoverage_haj = de_anacoverage_haj,
+      de_bootcoverage_ht = de_bootcoverage_ht, de_bootcoverage_haj = de_bootcoverage_haj,
+      ie0_anacoverage_ht = ie0_anacoverage_ht, ie0_anacoverage_haj = ie0_anacoverage_haj,
+      ie0_bootcoverage_ht = ie0_bootcoverage_ht, ie0_bootcoverage_haj = ie0_bootcoverage_haj,
+      ie1_anacoverage_ht = ie1_anacoverage_ht, ie1_anacoverage_haj = ie1_anacoverage_haj,
+      ie1_bootcoverage_ht = ie1_bootcoverage_ht, ie1_bootcoverage_haj = ie1_bootcoverage_haj,
+      y0_anacoverage_ht = y0_anacoverage_ht, y1_anacoverage_ht = y1_anacoverage_ht,
+      y0_bootcoverage_ht = y0_bootcoverage_ht, y1_bootcoverage_ht = y1_bootcoverage_ht,
+      #variances
+      #OE HT
+      oe_bootvar_ht = oe_bootvar_ht, 
+      oe_analyticalvar_ht = oe_analyticalvar_ht,
+      #OE HAJ
+      oe_bootvar_haj = oe_bootvar_haj, 
+      oe_analyticalvar_haj = oe_analyticalvar_haj,
+      #DE HT
+      de_analyticalvar_ht = direct_analyticalvar_ht, 
+      de_bootvar_ht = direct_bootvar_ht,
+      #DE HAJ
+      de_analyticalvar_haj = direct_analyticalvar_haj,
+      de_bootvar_haj = direct_bootvar_haj,
+      #IE1 HT
+      ie1_analyticalvar_ht = indirect1_analyticalvar_ht, 
+      ie1_bootvar_ht = indirect1_bootvar_ht, 
+      #IE1 HAJ
+      ie1_analyticalvar_haj = indirect1_analyticalvar_haj, 
+      ie1_bootvar_haj = indirect1_bootvar_haj,
+      #IE0 HT
+      ie0_analyticalvar_ht = indirect0_analyticalvar_ht, 
+      ie0_bootvar_ht = indirect0_bootvar_ht, 
+      #IE0 HAJ
+      ie0_analyticalvar_haj = indirect0_analyticalvar_haj, 
+      ie0_bootvar_haj = indirect0_bootvar_haj,
+      #sum wts
+      sum_wts0 = sum_wts0, sum_wts1 = sum_wts1
+    )
   bigbiastab = rbind(bigbiastab, biastab)
 } 
 
-hist(bigbiastab$true_de)
 
 og = bigbiastab 
 #bigbiastab = og
 
-#pick a for analytical variance, b for bootstrapped variance
+#pick a for CI using analytical variance, b for bootstrapped variance
 bigbiastab = pick_var('a', bigbiastab) 
 
 if(!bivar){
@@ -360,19 +354,20 @@ if(!bivar){
 ########################################################################
 # FOR POWER CALCS
 ########################################################################
-oe_bias_tab = bigbiastab %>%
-  pivot_longer(cols = oe_ht:oe_haj, names_to = 'which_oe_est', values_to = 'oe_est') %>%
-  pivot_longer(cols = c(oe_ht_ana_lb, oe_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
-  pivot_longer(cols = c(oe_ht_ana_ub, oe_haj_ana_ub), names_to = "which_ub", values_to = 'ub') %>%
-  filter(which_oe_est == 'oe_haj' & which_lb == 'oe_haj_ana_lb' |
-           which_oe_est == 'oe_ht' & which_lb == 'oe_ht_ana_lb',
-         which_oe_est == 'oe_haj' & which_ub == 'oe_haj_ana_ub' |
-           which_oe_est == 'oe_ht' & which_ub == 'oe_ht_ana_ub')
-
-#get oe true for power calcs
-testing = oe_bias_tab %>% group_by(label, g) %>% summarise(true_oe = mean(true_oe))
-testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe)))
-
+if(F){ # only run for power analysis
+  oe_bias_tab = bigbiastab %>%
+    pivot_longer(cols = oe_ht:oe_haj, names_to = 'which_oe_est', values_to = 'oe_est') %>%
+    pivot_longer(cols = c(oe_ht_ana_lb, oe_haj_ana_lb), names_to = "which_lb", values_to = 'lb') %>%
+    pivot_longer(cols = c(oe_ht_ana_ub, oe_haj_ana_ub), names_to = "which_ub", values_to = 'ub') %>%
+    filter(which_oe_est == 'oe_haj' & which_lb == 'oe_haj_ana_lb' |
+             which_oe_est == 'oe_ht' & which_lb == 'oe_ht_ana_lb',
+           which_oe_est == 'oe_haj' & which_ub == 'oe_haj_ana_ub' |
+             which_oe_est == 'oe_ht' & which_ub == 'oe_ht_ana_ub')
+  
+  #get oe true for power calcs
+  testing = oe_bias_tab %>% group_by(label, g) %>% summarise(true_oe = mean(true_oe))
+  testing = testing %>% group_by(label) %>% summarise(maxdiff = max(dist(true_oe)))
+}  
 
 ##########################################################
 # EFFECT / COVERAGE / BIAS PLOTS FOR MS 
@@ -390,15 +385,15 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   if(i == 'IE0'){fig2df$true = fig2df$true_ie0; fig2df$est = fig2df$ie0_haj; ylab = 'Indirect Effect (0)'}
   if(i == 'IE1'){fig2df$true = fig2df$true_ie1; fig2df$est = fig2df$ie1_haj; ylab = 'Indirect Effect (1)'}
   if(i == 'OE'){fig2df$true = fig2df$true_oe; fig2df$est = fig2df$oe_haj; ylab = 'Overall Effect'}
- 
+  
   a = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')=0'
   b = 'Cor(X' %p% supsc('(1)') %p%',X' %p% supsc('(2)') %p% ')>0'
   
   if(!bivar){
     fig2df = fig2df %>% 
       filter(Conc == a & gamma_ind == 'Target X' %p% supsc('(1)') | 
-             Conc == b & gamma_ind == 'Target X' %p% supsc('(2)') |
-             Conc == a & gamma_ind == 'Target X' %p% supsc('(2)')) 
+               Conc == b & gamma_ind == 'Target X' %p% supsc('(2)') |
+               Conc == a & gamma_ind == 'Target X' %p% supsc('(2)')) 
   }
   
   fig2df = fig2df %>%
@@ -410,7 +405,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   if(bivar){
     dd = fig2df %>%
       filter(!(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)' & 
-               InterferenceX2 =='Heterogeneous Interference\n (β₅=1)'),
+                 InterferenceX2 =='Heterogeneous Interference\n (β₅=1)'),
              !(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)' & 
                  Conc =='Cor(X⁽¹⁾,X⁽²⁾)>0')) %>%
       mutate(InterferenceX2 = case_when(InterferenceX2 == 'No Interference\n (β₅=0)' ~ 'Homogeneous Interference\n (β₅=0)',
@@ -418,7 +413,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
              InterferenceX2 = factor(InterferenceX2, levels = c('Homogeneous Interference\n (β₅=0)','Heterogeneous Interference\n (β₅=1)' )),
              IntIn1 = ifelse(Interference == 'No Interference\n (β₃=0; β₄=0; β₅=0)', 'No Interference', IntIn1),
              IntIn1 = fct_rev(factor(IntIn1)))#,
-             #IntIn1 = ifelse(Interference == 'No Interference\n (β₃=0; β₄=0)', '', IntIn1))
+    #IntIn1 = ifelse(Interference == 'No Interference\n (β₃=0; β₄=0)', '', IntIn1))
     ggplot(data = dd, aes(x = g1, y = g2, fill = est)) + 
       geom_raster() + 
       ggh4x::facet_nested(rows = vars(IntIn2, InterferenceX2, Conc), 
@@ -476,7 +471,9 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
       labs(fill = '95% CI coverage')
     
     ggsave(paste0(fig_loc, '/', effect, '_bivar_modelsim_coverage.png'), width = 9, height = 9)
-  }else{
+  }else{ #univar
+    if(effect == 'OE'){save(fig2df, file = paste0(fig_loc, '/', effect, '_figdf.RData'))}
+    
     covdf = fig2df %>% 
       pivot_longer(c(colname_boot,colname_ana)) %>% 
       mutate(name = case_when(name == colname_boot ~ 'bootstrap',
@@ -492,7 +489,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   }
   
   #BIAS PLOT
-
+  
   
   if(bivar){
     colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
@@ -524,7 +521,7 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
       geom_hline(yintercept = 0)
     ggsave(paste0(fig_loc, '/', effect, '_univar_modelsim_bias.png'), width = 9, height = 6)
   }
-
+  
 }
 
 #bias tables for appendix

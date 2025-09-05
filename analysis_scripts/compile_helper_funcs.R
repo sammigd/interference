@@ -3,7 +3,7 @@
 
 #calc means over 600 simulations for each scenario
 get_means = function(which_iter, e.names, beta4 = b4, beta5 = b5, diffusion = F, truth_use = NULL){
-
+  #which_iter = 16
   iters = alliters[str_detect(alliters, parmlist[which_iter])]
   for(i in e.names){
     assign(i, array(NA, dim = c(ngam, length(iters)), dimnames(list('gammas', 'iters'))))

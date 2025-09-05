@@ -13,9 +13,10 @@ load("~/project/cai/figures/ms_figs_univar_bigalpha/OE_figdf.RData")
 bigalpha = fig2df
 bigalpha$alpha = '0.6'
 
-load("~/project/cai/figures/ms_figs_univar/OE_figdf.RData")
+load("~/project/cai/figures/ms_figs_univar_stdalpha/OE_figdf.RData")
 stdalpha = fig2df
 stdalpha$alpha = '0.5'
+
 
 varfigdf = rbind(smallalpha, bigalpha, stdalpha)
 
@@ -34,7 +35,7 @@ ggplot(varfigdf, aes(x = g, y = oe_bootvar_haj, colour = alpha)) +
   ylab('Bootstrapped Variance') + 
   xlab(TeX(r'(\gamma)')) + 
   labs(colour = 'hypothetical alpha')
-ggsave(paste0(fig_loc, '/variancecompanalytical.png'), width = 9, height = 6)
+ggsave(paste0(fig_loc, '/variancecompboot.png'), width = 9, height = 6)
 
 
 ggplot(varfigdf, aes(x = g, y = oe_analyticalvar_haj, colour = alpha)) + 
@@ -43,5 +44,5 @@ ggplot(varfigdf, aes(x = g, y = oe_analyticalvar_haj, colour = alpha)) +
   ylab('Analytical Variance') + 
   xlab(TeX(r'(\gamma)')) + 
   labs(colour = 'hypothetical alpha')
-ggsave(paste0(fig_loc, '/variancecompboot.png'), width = 9, height = 6)
+ggsave(paste0(fig_loc, '/variancecompanalytical.png'), width = 9, height = 6)
 

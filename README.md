@@ -25,4 +25,4 @@ To replicate the application results
 
 Other scripts, within the 'analysis_scripts' folder, create functions that are 
 called within the model_sim script. These scripts are adapted from our 
-coauthor's prior work (https://github.com/gpapadog/Interference). 
+coauthor's prior work (https://github.com/gpapadog/Interference). HEAD@{2}

@@ -63,6 +63,7 @@ if(!diffusion){
   concor = as.numeric(args[5]) #0, .65, .8
   beta_5 = as.numeric(args[6]) #for bivariate X2 spillover
   hypothetical_alpha = as.numeric(args[7])
+  if(len(args)==8){ngamma = as.numeric(args[8])}
   
   clust_size = '15'
   n_clus = 300 #200
@@ -117,8 +118,8 @@ if(alt_clus_size == T){
 #get possible gammas
 if(!diffusion){
   if(!bivar){ #univar
-    gl = seq(from = -1.3, to = 1.3, length.out = 33)
-    ngl = rep(0, 33)
+    gl = seq(from = -1.3, to = 1.3, length.out = ngamma)
+    ngl = rep(0, ngamma)
     gamma_list = rbind(rep(0, 99),
                       c(gl, ngl, ngl),
                       c(ngl, gl, ngl),
@@ -465,7 +466,7 @@ if(diffusion){
       save.image(paste0('ms_univar_2025jul9_largealpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '.RSave'))
     }
     if(hypothetical_alpha == 0.5){
-      if(alt_clus_size == F){save.image(paste0('ms_univar_2025jul9_stdalpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '.RSave'))}
+      if(alt_clus_size == F){save.image(paste0('ms_univar_2026may16_stdalpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '_', ngam, '.RSave'))}
       if(alt_clus_size == T){save.image(paste0('ms_univar_2025aug17_altclus','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '.RSave'))}
     }
   }

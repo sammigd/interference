@@ -1,5 +1,4 @@
 #create new function: get true vector of IE under heterogeneous interference 
-
 get_het_ie <- function(dta, gamma_numer, cov_cols, 
                        beta_0 = NULL, beta_1 = NULL, beta_2 = NULL, beta_3 = NULL, beta_4 = NULL, beta_5 = beta_5,
                        alpha, alpha_re_bound = 10, diffusion = F, diffusion_p = NULL, nn){

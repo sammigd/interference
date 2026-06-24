@@ -15,7 +15,8 @@ library(latex2exp)
 bivar = F #SET INPUT TO SELECT SCENARIO
 
 if(bivar == F){ #SET INPUT TO SELECT SCENARIO (comment out all but one)
-  revision_scenarios = 'og' # univariate - original mod results - alpha = 0.5, clust size = 15
+  revision_scenarios = 'round2' #second round of revisions, with varied # gammas
+  #revision_scenarios = 'og' # univariate - original mod results - alpha = 0.5, clust size = 15
   #revision_scenarios = 'smallalpha' # univariate - revision addition - alpha = 0.4, clust size = 15
   #revision_scenarios = 'largealpha' #univariate - revision addition - alpha = 0.6, clust size = 15
   #revision_scenarios = 'altclus' #univariate - revision addition - alpha = 0.5, clust size = half 10, half 15
@@ -27,7 +28,7 @@ diffusion = F #SET INPUT TO SELECT SCENARIO
 # END SCENARIO INPUTS TO MANUALLY SET ############
 ##################################################
 
-setwd("/gpfs/gibbs/project/forastiere/sgd37/cai")
+setwd("~/project_pi_lf474/sgd37")
 source('interference/analysis_scripts/compile_helper_funcs.R')
 
 if(bivar){fig_loc = "~/project/cai/figures/ms_figs_bivar_two"}
@@ -36,6 +37,7 @@ if(!bivar & revision_scenarios == 'og'){fig_loc = "~/project/cai/figures/ms_figs
 if(!bivar & revision_scenarios == 'smallalpha'){fig_loc = "~/project/cai/figures/ms_figs_univar_smallalpha"}
 if(!bivar & revision_scenarios == 'largealpha'){fig_loc = "~/project/cai/figures/ms_figs_univar_bigalpha"}
 if(!bivar & revision_scenarios == 'altclus'){fig_loc = "~/project/cai/figures/ms_figs_univar_altclus"}
+if(!bivar & revision_scenarios == 'round2'){fig_loc = "~/project_pi_lf474/sgd37/interference/figures/ms_figs_univar_stdalpha_round2"}
 
 
 theme_set(theme_minimal()+
@@ -50,15 +52,20 @@ theme_set(theme_minimal()+
 
 #univar heterogeneity
 if(!bivar){
-  ngam = 100
-  gl = seq(from = -1.3, to = 1.3, length.out = 33)
-  ngl = rep(0, 33)
-  gamma_list = rbind(rep(0, 99),
-                     c(gl, ngl, ngl),
-                     c(ngl, gl, ngl),
-                     c(ngl, ngl, gl))
-  gamma_list = cbind(gamma_list, c(0,0,0,0))
-  
+  make_gamma_table = function(ngam, third){
+    #ngam = 100
+    #third = 33
+    gl = seq(from = -1.3, to = 1.3, length.out = third)
+    ngl = rep(0, third)
+    gamma_list = rbind(rep(0, third*3),
+                       c(gl, ngl, ngl),
+                       c(ngl, gl, ngl),
+                       c(ngl, ngl, gl))
+    gamma_list = cbind(gamma_list, c(0,0,0,0))
+    return(gamma_list)
+  }
+    
+  #gamma_list = make_gamma_table(100, 33)
   beta_0 = .1
   beta_1 = 3
 }
@@ -80,6 +87,8 @@ if(!bivar & revision_scenarios == 'og'){setwd("~/project/cai/ms_univar_2025jul9_
 if(!bivar & revision_scenarios == 'smallalpha'){setwd("~/project/cai/ms_univar_2025jul9_smallalpha")}
 if(!bivar & revision_scenarios == 'largealpha'){setwd("~/project/cai/ms_univar_2025jul9_largealpha")}
 if(!bivar & revision_scenarios == 'altclus'){setwd("~/project/cai/ms_univar_2025aug17_altclus")}
+if(!bivar & revision_scenarios == 'round2'){setwd("~/project_pi_lf474/sgd37/interference/results/ms_univar_2026may16_stdalpha")}
+
 
 
 alliters = list.files()
@@ -114,10 +123,9 @@ e.names = c('direct_ht', 'direct_analyticalvar_ht', 'direct_bootvar_ht',
 #######################################
 # POWER TESTING FOR FLAT OE ###########
 #######################################
-# this section of code calculates the power of the proposed statistical test
-# it takes a while to run, so don't usually run it for supplemental analyses
+
 if(F){ 
-  source('~/project/cai/interference/oe_stattest.R')
+  source('/nfs/roberts/project/pi_lf474/sgd37/interference/analysis_scripts/oe_stattest.R')
   
   #get counts
   table(sapply((str_split(alliters, '_', n = 2)), tail , 1))
@@ -130,19 +138,23 @@ if(F){
   
   ind = 1
   
+  power_parmlist = parmlist[grepl("^_0_2_0_1_", parmlist)]
   #for each set of parameters
-  for (pset in 1:length(parmlist)){
-    iters = alliters[str_detect(alliters, parmlist[pset])]
+  for (pset in 1:length(power_parmlist)){
+    print('parms')
+    print(pset)
+    iters = alliters[str_detect(alliters, power_parmlist[pset])]
     
     #for each simulation
-    for (i in 1:length(iters)){
+    for (i in 1:300){#length(iters)){ #hardcoding 300 6/5 bc computational limits
+      print(i)
       load(iters[i])
       if(is.na(test$oe[1,1])){next}
       
       #run sig test for that simulation
-      testresult = oe_sigtest(test$oe, test$oe_cov)
-      testresult_ie1 = oe_sigtest(test$indirect1, test$indirect_cov[,,2])
-      testresult_ie0 = oe_sigtest(test$indirect0, test$indirect_cov[,,1])
+      testresult = oe_sigtest(test$oe, test$oe_cov, 1:dim(test$oe_cov)[1])
+      testresult_ie1 = oe_sigtest(test$indirect1, test$indirect_cov[,,2], 1:dim(test$oe_cov)[1])
+      testresult_ie0 = oe_sigtest(test$indirect0, test$indirect_cov[,,1], 1:dim(test$oe_cov)[1])
       testresult_de = oe_sigtest(test$direct, test$direct_cov)
       
       sigresults = append(sigresults, testresult$accept)
@@ -199,7 +211,7 @@ if(F){
   
   other_power = merge(de_power, ie0_power, by = 'parms') %>% 
     merge(ie1_power, by = 'parms') %>%
-    separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5'), sep = '_') %>%
+    separate(parms, into = c('x', 'b3', 'b4', 'concordance', 'b5', 'ngam'), sep = '_') %>%
     mutate(b5 = substr(b5, 1,1)) %>%
     arrange(b4, b5, b3, concordance) %>%
     rename(de_level = de_rej_rate) %>%
@@ -253,19 +265,30 @@ for (parms in 1:length(parmlist)){
   print(parms)
   #make parms pretty
   ugly_parm = str_split(parmlist[parms], '_')
-  pretty_parm = paste0('beta3 = ', ugly_parm[[1]][2], ', \nbeta4 = ', ugly_parm[[1]][3], ', \nconcor(X1,X2) = ', str_sub(ugly_parm[[1]][4], start = 1, end =-7 ))
+  pretty_parm = paste0('beta3 = ', ugly_parm[[1]][2], 
+                       ', \nbeta4 = ', ugly_parm[[1]][3], 
+                       ', \nconcor(X1,X2) = ', str_sub(ugly_parm[[1]][4], start = 1, end =-7 ),
+                       'ngam = ', ugly_parm[[1]][6])
   concordance = ugly_parm[[1]][4]
   b3 = ugly_parm[[1]][2]
   b4 = ugly_parm[[1]][3]
   b5 = str_sub(ugly_parm[[1]][5], 1, 1)
+  ngam = as.integer(str_remove(ugly_parm[[1]][6], ".RSave"))
+  print(paste0('ngam = ', ngam))
+  
   #if(!bivar){b5 = 0}
   #if(!(b4 %in% c(0,1))){next}
   #if(!(concordance %in% 0)){next}
+  
+  #make gamma table
+  gamma_list = make_gamma_table(ngam, (ngam-1) / 3)
+  
   estimates = get_means(parms, e.names)
   for (i in 1:length(e.names)){
     #print('newparms')
     assign(e.names[i], estimates[[i]])
   }
+  
   biastab = data.frame(#g = gamma_list[2,]) %>% #
     g = c(rep(gamma_list[2,1:floor(ngam/3)], 3), 0),
     g1 = gamma_list[2,],
@@ -292,7 +315,7 @@ for (parms in 1:length(parmlist)){
       bias_y0_haj = y0_haj - true_y0,
       bias_y1_haj = y1_haj - true_y1,
       #labels
-      label = pretty_parm, concordance = concordance, b3 = b3, b4 = b4, b5 = b5,
+      label = pretty_parm, concordance = concordance, b3 = b3, b4 = b4, b5 = b5, ngam = ngam,
       #coverage
       oe_anacoverage_ht = oe_anacoverage_ht, oe_anacoverage_haj = oe_anacoverage_haj,
       oe_bootcoverage_ht = oe_bootcoverage_ht, oe_bootcoverage_haj = oe_bootcoverage_haj,
@@ -348,7 +371,7 @@ if(!bivar){
   #  filter(gamma_ind != 'X3')
   bigbiastab = bigbiastab %>% filter(#gamma_ind =='X1', #removes a few dups
     (true_oe == 0 | g !='0')) %>%
-    filter(b5 == 0)
+    filter(b5 == 1)
 }
 #
 ########################################################################
@@ -489,8 +512,6 @@ for(i in c('DE', 'IE0', 'IE1', 'OE')){
   }
   
   #BIAS PLOT
-  
-  
   if(bivar){
     colname_bias = paste0('bias_' ,str_to_lower(i), '_haj')
     dd$bias = dd[,colname_bias]
@@ -557,4 +578,83 @@ print(xtable(uni_bt, type = "latex", digits = 6, align = "|c|c|c|c|c|c|c|c|c|c|"
 
 
 save.image(paste0(fig_loc, '/mod_wkspc.RSave'))
+
+##############################################################################
+# round 2 revisions figures 
+##############################################################################
+
+bigbiastab %>% 
+  ggplot(aes(x = g, y = oe_haj)) + 
+  geom_point() +
+  facet_wrap(ngam)
+
+
+#estimate
+bigbiastab %>%
+  filter(concordance =='0.65') %>%
+  ggplot(aes(x = g, y = oe_ht))+#, #color = name, shape = name)) + 
+    geom_point(colour = '#00BFC4') +
+    geom_line(aes(y = true_oe)) + 
+    geom_ribbon(aes(x = g, ymin = oe_haj_ana_lb, ymax = oe_haj_ana_lb), 
+                alpha = .2, fill = '#00BFC4', colour = rgb(0,0,0,0)) +
+    facet_nested(rows = vars(gamma_ind, concordance), 
+                 cols = vars(ngam), 
+                 nest_line = element_line(), 
+                 solo_line = T,
+                 render_empty = F) + 
+    xlab(TeX(r'(\gamma)')) + 
+    ylab('Overall Effect') #+ ylim(-.042,.042)
+
+#coverage
+bigbiastab %>%
+  ggplot(aes(x = g, y = oe_anacoverage_haj)) + 
+    geom_point(alpha = 0.5) + 
+    facet_nested(rows = vars(gamma_ind), 
+                 cols = vars(ngam), 
+                 nest_line = element_line(), solo_line = T) + 
+    ylab('95% CI Coverage') + 
+    xlab(TeX(r'(\gamma)')) + 
+    geom_hline(yintercept = 0.95)
+
+#bias
+bigbiastab %>%
+  ggplot(aes(x = g, y = bias_oe_haj)) + 
+    geom_point(alpha = 0.5) + 
+    facet_nested(rows = vars(gamma_ind), 
+                 cols = vars(ngam), 
+                 nest_line = element_line(), 
+                 solo_line = T, 
+                 render_empty = F) + 
+    ylab('Bias') + 
+    xlab(TeX(r'(\gamma)')) + 
+    geom_hline(yintercept = 0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

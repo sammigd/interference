@@ -6,24 +6,31 @@ library(latex2exp)
 library(viridis)
 library(rlist)
 
-source(here('load_clean_cai.R')) 
+repo_loc = "~/project_pi_lf474/sgd37/"
 
-library(Interference, lib.loc = here())
-source(here('analysis_scripts/GroupIPW_sd v2.R'))
-source(here('analysis_scripts/denominator_sd.R'))
-source(here('analysis_scripts/helper_functs.R'))
-source(here('analysis_scripts/parallel_bootvar_function test.R'))
-source(here('analysis_scripts/ypop_sd.R'))
-source(here('analysis_scripts/hajek_adj.R'))
-source(here('analysis_scripts/de_sd.R'))
-source(here('analysis_scripts/ie_sd.R'))
-source(here('analysis_scripts/CalcHeterogenousTrueIE.R'))
-source(here('analysis_scripts/oe_sd.R'))
-source(here('analysis_scripts/oe_stattest.R'))
+source(paste0(repo_loc, 'interference/load_clean_cai.R')) 
 
+library(Interference, lib.loc = paste0(repo_loc, '/pckgs'))
+
+
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/GroupIPW_sd v2.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/denominator_sd.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/helper_functs.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/parallel_bootvar_function test.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/ypop_sd.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/hajek_adj.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/de_sd.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/ie_sd.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/CalcHeterogenousTrueIE.R')) #flag loading issues 2026/4/4
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/oe_sd.R'))
+source(paste0(repo_loc, 'interference/', 'analysis_scripts/oe_stattest.R'))
+
+revisions = T
 seed = 812
 
-fig_loc = 'ms_figs_cai'
+fig_loc = 'ms_figs_cai' #for main publication figs
+fig_loc_revisions = 'revision_figs_application'
+if(revisions == T){fig_loc = fig_loc_revisions}
 
 #check correlation between degree and median rank of neighbors degree
 df = df %>% group_by(cluster) %>% mutate(dgr_rank = rank(dgr))
@@ -69,21 +76,21 @@ ggplot(df, aes(x = norm_btwn, color = cluster_cat)) + geom_density() +
   #ggtitle('Density of Norm Betweenness in Large and Small Clusters') + 
   theme_bw() +
   labs(x = 'Normalized Betweenness', y = 'Density', colour = 'Village Size')
-ggsave(here('figures', fig_loc, paste0('comparing_normbtwn_split.png')), height = 4, width = 6)
+#ggsave(here('figures', fig_loc, paste0('comparing_normbtwn_split.png')), height = 4, width = 6)
 
 ggplot(df, aes(x = norm_degree, color = cluster_cat)) + geom_density() + 
   #ggtitle('Density of Norm Degree in Large and Small Clusters') + 
   theme_bw() +
   labs(x = 'Normalized Degree', y = 'Density', colour = 'Village Size')
-ggsave(here('figures', fig_loc, paste0('comparing_normdgr_split.png')), height = 4, width = 6)
+#ggsave(here('figures', fig_loc, paste0('comparing_normdgr_split.png')), height = 4, width = 6)
 
 
 ggplot(df, aes(x = dgr, color = cluster_cat)) + geom_density() + ggtitle('Density of Degree in Large and Small Clusters')
-ggsave(here('figures', fig_loc, paste0('comparing_dgr_split.png')), height = 5, width = 5)
+#ggsave(here('figures', fig_loc, paste0('comparing_dgr_split.png')), height = 5, width = 5)
 
 
 ggplot(df, aes(x = n.peers, fill = cluster_cat)) + geom_bar() + ggtitle('Density of n.peers in Large and Small Clusters')
-ggsave(here('figures', fig_loc, paste0('comparing_npeers_split.png')), height = 5, width = 5)
+#ggsave(here('figures', fig_loc, paste0('comparing_npeers_split.png')), height = 5, width = 5)
 
 
 #check if it works if I impute missing values from group mean or something like that
@@ -128,14 +135,14 @@ bivar = F
 olddf = df
 #df = olddf
 trt_col_list = c(#55, #educ_good
-                 54, #rice area 2010
-                 21, #disaster prob
-                 #28, #risk averse
-                 34,#, #dgr
-                 35#, #btwn
-                 #53, #understanding
-                 #56 #age
-                 )
+  54, #rice area 2010
+  21, #disaster prob
+  #28, #risk averse
+  34,#, #dgr
+  35#, #btwn
+  #53, #understanding
+  #56 #age
+)
 #trt_col_list = list(c(34,35), c(34,54)) #bivariate
 if(bivar){trt_col_list = list(c(34,54), c(34,35))}
 #trt_col_list = list(c(34,54))
@@ -150,336 +157,389 @@ de_univar_pvals = matrix(NA, nrow = 0, ncol = 6)
 ie0_univar_pvals = matrix(NA, nrow = 0, ncol = 6)
 ie1_univar_pvals = matrix(NA, nrow = 0, ncol = 6)
 
+univar_gamma_Rs = c(25, 55, 100, 199)
+bivar_gamma_Rs = c(2, 4, 7, 7*2, 7*3, 7*4)
 
-counter = 0
-for(j in 1:3){ #1:3
-  #j = 1
-  df = olddf
-  if (j == 1){
-    ww = '_over80'
-    df = df[df$cluster %in% clustersize$cluster[clustersize$size > 80],]
-  }
-  
-  if(j == 2){
-    ww = '_le80'
-    df = df[df$cluster %in% clustersize$cluster[clustersize$size <= 80],]
-  }
-  
-  if(j==3){
-    ww = '_all'
+j_range = 1:3
+#if(revisions == T){j_range = 3}
+
+for(gamma_R in univar_gamma_Rs){
+  counter = 0
+  for(j in j_range){ #1:3
+    #j = 1
     df = olddf
-  }
-  
-  relabel_key = data.frame(old_cl = unique(df$cluster), new_cl = 1:length(unique(df$cluster)))
-  df = merge(df, relabel_key, by.x = 'cluster', by.y = 'old_cl')
-  df$neigh = df$new_cl
-  
-  for (i in trt_col_list){
-    counter = counter+1
-    #i = 21
-    #i = c(34, 35)
-    estimand <- '1'
-    cov_cols = c(i) #cov_cols = c(34,54)
-
-    trt_col = 41
-    out_col = 42
-    #ps_with_re = FALSE
-    #numerator_with_re = FALSE
-    out_name = 'trt'
-    if(!bivar){target_name = paste0(names(df)[i], ww)} #target_name = 'dgr_btwn'
-    if(bivar){target_name = paste0('dgr_ricearea',ww)}
+    if (j == 1){
+      ww = '_over80'
+      df = df[df$cluster %in% clustersize$cluster[clustersize$size > 80],]
+    }
     
-    clean_name = case_when(target_name %in% c('btwn_all', 'btwn_le80', 'btwn_over80') ~ 'Betweenness',
-                           target_name %in% c('dgr_all' , 'dgr_le80' , 'dgr_over80') ~ 'Degree',
-                           target_name %in% c('disaster_prob_all' , 'disaster_prob_le80' , 'disaster_prob_over80') ~ 'Future Disaster Probability',
-                           target_name %in% c('ricearea_2010_imp_all' , 'ricearea_2010_imp_le80' , 'ricearea_2010_imp_over80') ~ 'Rice Production Area')
+    if(j == 2){
+      ww = '_le80'
+      df = df[df$cluster %in% clustersize$cluster[clustersize$size <= 80],]
+    }
     
-    phi_hat <- list(coefs = c(0, 0), re_var = 0)
-    alpha = .22
+    if(j==3){
+      ww = '_all'
+      df = olddf
+    }
     
-    #get distribution of observed gammas
-    glist = c()
-    glist1 = c()
-    glist2 = c()
+    relabel_key = data.frame(old_cl = unique(df$cluster), new_cl = 1:length(unique(df$cluster)))
+    df = merge(df, relabel_key, by.x = 'cluster', by.y = 'old_cl')
+    df$neigh = df$new_cl
     
-    for (cl in unique(df$neigh)){
-      #cov_cols = 54
-      #cov_cols = 21
-      #cov_cols = 34
-      #cov_cols = 35
-      subdf = df[df$neigh == cl,]
-      #print(subdf)
-      #print(cl)
-      if(length(unique(unlist(subdf[,trt_col]))) == 1){next}
-      if(length(unique(unlist(subdf[,cov_cols]))) == 1){next}
+    for (i in trt_col_list){
+      counter = counter+1
+      #i = 21
+      #i = c(34, 35)
+      estimand <- '1'
+      cov_cols = c(i) #cov_cols = c(34,54)
       
-      if(!bivar){ #univariate
-        mod = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols])), family = binomial()) #maybe need to add unlist if breaks
-        glist = append(glist, coef(mod)[2])
-      }
+      trt_col = 41
+      out_col = 42
+      #ps_with_re = FALSE
+      #numerator_with_re = FALSE
+      out_name = 'trt'
+      if(!bivar){target_name = paste0(names(df)[i], ww)} #target_name = 'dgr_btwn'
+      if(bivar){target_name = paste0('dgr_ricearea',ww)}
       
-      if(bivar){ #bivariate
-        mod1 = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols[1]])), family = binomial()) #maybe need to add unlist if breaks
-        glist1 = append(glist1, coef(mod1)[2])
+      clean_name = case_when(target_name %in% c('btwn_all', 'btwn_le80', 'btwn_over80') ~ 'Betweenness',
+                             target_name %in% c('dgr_all' , 'dgr_le80' , 'dgr_over80') ~ 'Degree',
+                             target_name %in% c('disaster_prob_all' , 'disaster_prob_le80' , 'disaster_prob_over80') ~ 'Future Disaster Probability',
+                             target_name %in% c('ricearea_2010_imp_all' , 'ricearea_2010_imp_le80' , 'ricearea_2010_imp_over80') ~ 'Rice Production Area')
+      
+      phi_hat <- list(coefs = c(0, 0), re_var = 0)
+      alpha = .22
+      
+      #get distribution of observed gammas
+      glist = c()
+      glist1 = c()
+      glist2 = c()
+      
+      for (cl in unique(df$neigh)){
+        #print('looping through clusters')
+        subdf = df[df$neigh == cl,]
+        if(length(unique(unlist(subdf[,trt_col]))) == 1){print('skip: no treatment variation'); next}
+        if(length(unique(unlist(subdf[,cov_cols]))) == 1){print('skip: no covariate variation'); next}
         
-        mod2 = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols[2]])), family = binomial()) #maybe need to add unlist if breaks
-        glist2 = append(glist2, coef(mod2)[2])
+        if(!bivar){ #univariate
+          #print('estimating gamma range')
+          mod = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols])), family = binomial()) #maybe need to add unlist if breaks
+          glist = append(glist, coef(mod)[2])
+        }
+        
+        if(bivar){ #bivariate
+          mod1 = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols[1]])), family = binomial()) #maybe need to add unlist if breaks
+          glist1 = append(glist1, coef(mod1)[2])
+          
+          mod2 = glm(unlist(subdf[,trt_col]) ~ (unlist(subdf[,cov_cols[2]])), family = binomial()) #maybe need to add unlist if breaks
+          glist2 = append(glist2, coef(mod2)[2])
+        }
+        
       }
-
-    }
-    
-    if(!bivar){
-      bounds = quantile(glist, probs = c(.1, .9))
-      print('**********')
-      print(i)
-      print(ww)
-      print(bounds)
-      print('********')
-      gamma_list = rbind(0,seq(from = bounds[1], 
-                               to = bounds[2], 
-                               length.out = 100))
-      gamma_list = cbind(gamma_list, c(0,0))
-    }
-  
-    if(bivar){
-      bounds1 = quantile(glist1, probs = c(.1, .9))
-      bounds2 = quantile(glist2, probs = c(.1, .9))
-      gl1 = c(seq(from = bounds1[1], to = bounds1[2], length.out = 7), 0)
-      gl2 = c(seq(from = bounds2[1], to = bounds2[2], length.out = 7), 0)
-      ggrid = expand.grid(gl1, gl2)
-      gamma_list = t(cbind(0, ggrid))
-    }
-
-    gamma_numer = gamma_list
-    ngam = ncol(gamma_list)
-    
-    yhat_group_sd2 = GroupIPW_sd2(dta = df, cov_cols = cov_cols,
-                                  alpha = alpha, trt_col = trt_col, out_col = out_col,
-                                  alpha_re_bound = 20, verbose = F,
-                                  gamma_numer = gamma_list, loud_denom = F, fix_phi = T)
-    
-    z <- yhat_group_sd2$yhat_group
-    po = apply(z, c(2,3), mean)
-    
-    haj = make_hajek(yhat_group_sd2, df)
-    
-    if(FALSE){
-      boots_est <- BootVar_sd(dta = df, B = 100, alpha = alpha, gamma_numer = gamma_list,
-                              cov_cols = cov_cols, trt_col = trt_col, out_col = out_col,
-                              phi_hat_true = NULL, verbose = TRUE, return_everything = TRUE)
-    }
-    
-    ypop = Ypop_sd(ygroup = yhat_group_sd2, horvitzthompson = F, dta = df)
-    #ypop bootvar: bootvariance for each ypop by gamma
-    if(FALSE){ypop_bootvar = apply(boots_est$boots, c(1,2), var)}
-    
-    
-    yplot = data.frame(gammas = gamma_list[2,],
-                       y0 = ypop$ypop[1,],
-                       y1 = ypop$ypop[2,]) %>%
-      pivot_longer(y0:y1)
-    
-    if(!bivar){
-      ggplot(data = yplot, aes(x = gammas, y = value, group = name, color = name)) + 
-        geom_line() +
-        labs(y = 'potential outcome', title = paste0('Potential Outcomes (haj) in Cai Data\n', target_name))# + 
-      #ylim(0, 1)
-      #ggsave(here('figures', fig_loc, paste0('haj_yhat_cai_', target_name, '.png')), height = 5, width = 5)
       
-      direct = DE_sd(ypop = ypop$ypop, ypop_var = ypop$ypop_var, boots = NULL)#boots = boots_est$hajboots)
-      de_test = oe_sigtest(direct, ypop$ypop_var_de, seed = seed)
+      if(!bivar){
+        bounds = quantile(glist, probs = c(.1, .9))
+        print('**********')
+        print(i)
+        print(ww)
+        print(bounds)
+        print('********')
+        gamma_list = rbind(0,seq(from = bounds[1], 
+                                 to = bounds[2], 
+                                 length.out = gamma_R))
+        gamma_list = cbind(gamma_list, c(0,0))
+      }
       
-      de_univar_pvals = rbind(de_univar_pvals, 
-                              c(i, 
+      if(bivar){
+        bounds1 = quantile(glist1, probs = c(.1, .9))
+        bounds2 = quantile(glist2, probs = c(.1, .9))
+        gl1 = c(seq(from = bounds1[1], to = bounds1[2], length.out = 7), 0)
+        gl2 = c(seq(from = bounds2[1], to = bounds2[2], length.out = 7), 0)
+        ggrid = expand.grid(gl1, gl2)
+        gamma_list = t(cbind(0, ggrid))
+      }
+      
+      gamma_numer = gamma_list
+      ngam = ncol(gamma_list)
+      
+      yhat_group_sd2 = GroupIPW_sd2(dta = df, cov_cols = cov_cols,
+                                    alpha = alpha, trt_col = trt_col, out_col = out_col,
+                                    alpha_re_bound = 20, verbose = F,
+                                    gamma_numer = gamma_list, loud_denom = F, fix_phi = T)
+      
+      z <- yhat_group_sd2$yhat_group
+      po = apply(z, c(2,3), mean)
+      
+      haj = make_hajek(yhat_group_sd2, df)
+      
+      if(FALSE){
+        boots_est <- BootVar_sd(dta = df, B = 100, alpha = alpha, gamma_numer = gamma_list,
+                                cov_cols = cov_cols, trt_col = trt_col, out_col = out_col,
+                                phi_hat_true = NULL, verbose = TRUE, return_everything = TRUE)
+      }
+      
+      ypop = Ypop_sd(ygroup = yhat_group_sd2, horvitzthompson = F, dta = df)
+      #ypop bootvar: bootvariance for each ypop by gamma
+      if(FALSE){ypop_bootvar = apply(boots_est$boots, c(1,2), var)}
+      
+      
+      yplot = data.frame(gammas = gamma_list[2,],
+                         y0 = ypop$ypop[1,],
+                         y1 = ypop$ypop[2,]) %>%
+        pivot_longer(y0:y1)
+      
+      if(!bivar){
+        ggplot(data = yplot, aes(x = gammas, y = value, group = name, color = name)) + 
+          geom_line() +
+          labs(y = 'potential outcome', title = paste0('Potential Outcomes (haj) in Cai Data\n', target_name))# + 
+        #ylim(0, 1)
+        #ggsave(here('figures', fig_loc, paste0('haj_yhat_cai_', target_name, '.png')), height = 5, width = 5)
+        
+        direct = DE_sd(ypop = ypop$ypop, ypop_var = ypop$ypop_var, boots = NULL)#boots = boots_est$hajboots)
+        de_test = oe_sigtest(direct, ypop$ypop_var_de, seed = seed)
+        
+        de_univar_pvals = rbind(de_univar_pvals, 
+                                c(i, 
+                                  names(df)[i], 
+                                  counter, 
+                                  ww, 
+                                  de_test$accept2, 
+                                  de_test$pvalue))
+        
+        detab = data.frame(estimated.de = direct['est',],
+                           lb = direct['est',] - 1.96*sqrt(direct['var',]),
+                           ub = direct['est',] + 1.96*sqrt(direct['var',]),
+                           gamma = gamma_list[2,],
+                           target = target_name) 
+        de_results[[counter]] <- detab
+        ggplot(detab,
+               aes(x = gamma, y = estimated.de)) + 
+          geom_line() + 
+          geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
+          ggtitle(paste0('Direct Effect in Cai data \nReject null:',!de_test$accept, ' Pvalue = ', de_test$pvalue)) + 
+          ylab('direct effect') + 
+          labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
+        if(revisions == T){
+          ggsave(here('figures',fig_loc, paste0('haj_de_cai_', target_name, '_gammacount', gamma_R, '.png')), height = 5, width = 5)
+        }else{
+          ggsave(here('figures',fig_loc, paste0('haj_de_cai_', target_name, '.png')), height = 5, width = 5)
+        }
+        
+        
+        #indirect effect
+        indirect0 = IE_sd(ypop = ypop, ygroup = yhat_group_sd2$yhat_group[,1,], 
+                          hajofygroup = haj$haj[1,], boots = NULL,#boots_est$hajboots, 
+                          treatment = 1)
+        ie0_cov = indirect0$ie_var
+        indirect0 = indirect0$ie[,,ngam]
+        ie0_test = oe_sigtest(indirect0, ie0_cov, seed = seed)
+        
+        ie0_univar_pvals = rbind(ie0_univar_pvals, 
+                                 c(i, 
                                    names(df)[i], 
                                    counter, 
                                    ww, 
-                                   de_test$accept2, 
-                                   de_test$pvalue))
+                                   ie0_test$accept2, 
+                                   ie0_test$pvalue))
+        
+        
+        indirect1 = IE_sd(ypop = ypop, ygroup = yhat_group_sd2$yhat_group[,2,], 
+                          hajofygroup = haj$haj[2,], boots = NULL,#boots_est$hajboots, 
+                          treatment =2)
+        ie1_cov = indirect1$ie_var
+        indirect1 = indirect1$ie[,,ngam]
+        ie1_test = oe_sigtest(indirect1, ie1_cov, seed = seed)
+        
+        ie1_univar_pvals = rbind(ie1_univar_pvals, 
+                                 c(i, 
+                                   names(df)[i], 
+                                   counter, 
+                                   ww, 
+                                   ie1_test$accept2, 
+                                   ie1_test$pvalue))
+        
+        ievartab1 = data.frame(estimated.ie = indirect1['est',],
+                               lb = indirect1['est',] - 1.96*sqrt(indirect1['var',]),
+                               ub = indirect1['est',] + 1.96*sqrt(indirect1['var',]),
+                               gamma = gamma_list[2,],
+                               target = target_name) 
+        ie1_results[[counter]] <- ievartab1
+        
+        ggplot(ievartab1,
+               aes(x = gamma, y = estimated.ie)) + 
+          geom_line() + 
+          geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
+          ggtitle(paste0('Indirect Effect in Cai data (on treated) \nReject null:',!ie1_test$accept, ' Pvalue = ', ie1_test$pvalue)) + 
+          ylab('indirect effect') + 
+          labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
+        if(revisions == T){
+          ggsave(here('figures',fig_loc, paste0('haj_ie1_cai_', target_name, '_gammacount', gamma_R, '.png')), height = 5, width = 5)
+          
+        }else{
+          ggsave(here('figures',fig_loc, paste0('haj_ie1_cai_', target_name, '.png')), height = 5, width = 5)
+        }
+        
+        ievartab0 = data.frame(estimated.ie = indirect0['est',],
+                               lb = indirect0['est',] - 1.96*sqrt(indirect0['var',]),
+                               ub = indirect0['est',] + 1.96*sqrt(indirect0['var',]),
+                               gamma = gamma_list[2,],
+                               target = target_name) 
+        ie0_results[[counter]] <- ievartab0
+        
+        
+        ggplot(ievartab0,
+               aes(x = gamma, y = estimated.ie)) + 
+          geom_line() + 
+          geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
+          ggtitle(paste0('Indirect Effect in Cai data (on untreated) \nReject null:',!ie0_test$accept, ' Pvalue = ', ie0_test$pvalue)) + 
+          ylab('indirect effect') + 
+          labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
+        #ggsave(here('figures',fig_loc, paste0('haj_ie1_cai_', target_name, '.png')), height = 5, width = 5)
+        
+        
+        #overall effect
+        oe = OE_sd(ypop = ypop, ygroup = yhat_group_sd2$oe_yhat_group,  
+                   hajofygroup = haj$oe_haj, boots = NULL)#boots_est$oehajboots)
+        oe_cov = oe$oe_var
+        oe = oe$oe[,,ngam]
+        oe_test = oe_sigtest(oe, oe_cov, seed = seed)
+        
+        print(list(i, 
+                   names(df)[i], 
+                   counter, 
+                   ww, 
+                   oe_test$accept2, 
+                   oe_test$pvalue))
+        univar_pvals = rbind(univar_pvals, c(i, 
+                                             names(df)[i], 
+                                             counter, 
+                                             ww, 
+                                             oe_test$accept2, 
+                                             oe_test$pvalue))
+        
+        oevartab = data.frame(estimated.oe = oe['est',],
+                              lb = oe['est',] - 1.96*sqrt(oe['var',]),
+                              ub = oe['est',] + 1.96*sqrt(oe['var',]),
+                              gamma = gamma_list[2,],
+                              target = target_name) 
+        oe_results[[counter]] <- oevartab
+        
+        ggplot(oevartab,
+               aes(x = gamma, y = estimated.oe)) + 
+          geom_line() + 
+          theme_minimal() +
+          theme(strip.text = element_text(size = 12),
+                text = element_text(size = 12),
+                axis.text = element_text(size = 12),
+                legend.title = element_blank(),
+                legend.position = 'bottom',
+                panel.spacing = unit(1.4, "lines")) +
+          geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub),alpha = 0.2,
+                      fill = '#00BFC4', colour = rgb(0,0,0,0)) +
+          ggtitle(paste0('Intervening on ', clean_name)) + 
+          ylab('Overall Effect') + xlab(TeX(r'(\gamma)')) +
+          labs(caption = paste0('Statistically significant deviation from flat OE? ',!oe_test$accept, ' Pvalue = ', oe_test$pvalue))
+        if(revisions == T){
+          ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', paste0(target_name), '_gammacount', gamma_R,'.png')), height = 3, width = 5)
+        }else{
+          ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', paste0(target_name), '.png')), height = 3, width = 5)
+        }
+        newline = c(target_name, cov_cols, gamma_R, oe_test$pvalue)
+        if(!exists("oe_test_gamma_range_results")){
+          oe_test_gamma_range_results = data.frame(
+            'target_name' = c(),
+            'covar' = c(), 
+            'number_of_gammas' = c(),
+            'pvalue' = c())}
+        oe_test_gamma_range_results = rbind(oe_test_gamma_range_results, newline)
+      }
       
-      detab = data.frame(estimated.de = direct['est',],
-                         lb = direct['est',] - 1.96*sqrt(direct['var',]),
-                         ub = direct['est',] + 1.96*sqrt(direct['var',]),
-                         gamma = gamma_list[2,],
-                         target = target_name) 
-      de_results[[counter]] <- detab
-      ggplot(detab,
-             aes(x = gamma, y = estimated.de)) + 
-        geom_line() + 
-        geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
-        ggtitle(paste0('Direct Effect in Cai data \nReject null:',!de_test$accept, ' Pvalue = ', de_test$pvalue)) + 
-        ylab('direct effect') + 
-        labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
-      ggsave(here('figures',fig_loc, paste0('haj_de_cai_', target_name, '.png')), height = 5, width = 5)
-      
-      
-      #indirect effect
-      indirect0 = IE_sd(ypop = ypop, ygroup = yhat_group_sd2$yhat_group[,1,], 
-                        hajofygroup = haj$haj[1,], boots = NULL,#boots_est$hajboots, 
-                        treatment = 1)
-      ie0_cov = indirect0$ie_var
-      indirect0 = indirect0$ie[,,ngam]
-      ie0_test = oe_sigtest(indirect0, ie0_cov, seed = seed)
-      
-      ie0_univar_pvals = rbind(ie0_univar_pvals, 
-                              c(i, 
-                                names(df)[i], 
-                                counter, 
-                                ww, 
-                                ie0_test$accept2, 
-                                ie0_test$pvalue))
-      
-      
-      indirect1 = IE_sd(ypop = ypop, ygroup = yhat_group_sd2$yhat_group[,2,], 
-                        hajofygroup = haj$haj[2,], boots = NULL,#boots_est$hajboots, 
-                        treatment =2)
-      ie1_cov = indirect1$ie_var
-      indirect1 = indirect1$ie[,,ngam]
-      ie1_test = oe_sigtest(indirect1, ie1_cov, seed = seed)
-      
-      ie1_univar_pvals = rbind(ie1_univar_pvals, 
-                               c(i, 
-                                 names(df)[i], 
-                                 counter, 
-                                 ww, 
-                                 ie1_test$accept2, 
-                                 ie1_test$pvalue))
-      
-      ievartab1 = data.frame(estimated.ie = indirect1['est',],
-                             lb = indirect1['est',] - 1.96*sqrt(indirect1['var',]),
-                             ub = indirect1['est',] + 1.96*sqrt(indirect1['var',]),
-                             gamma = gamma_list[2,],
-                             target = target_name) 
-      ie1_results[[counter]] <- ievartab1
-      
-      ggplot(ievartab1,
-             aes(x = gamma, y = estimated.ie)) + 
-        geom_line() + 
-        geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
-        ggtitle(paste0('Indirect Effect in Cai data (on treated) \nReject null:',!ie1_test$accept, ' Pvalue = ', ie1_test$pvalue)) + 
-        ylab('indirect effect') + 
-        labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
-      ggsave(here('figures',fig_loc, paste0('haj_ie1_cai_', target_name, '.png')), height = 5, width = 5)
-      
-      ievartab0 = data.frame(estimated.ie = indirect0['est',],
-                             lb = indirect0['est',] - 1.96*sqrt(indirect0['var',]),
-                             ub = indirect0['est',] + 1.96*sqrt(indirect0['var',]),
-                             gamma = gamma_list[2,],
-                             target = target_name) 
-      ie0_results[[counter]] <- ievartab0
-      
-      
-      ggplot(ievartab0,
-             aes(x = gamma, y = estimated.ie)) + 
-        geom_line() + 
-        geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub), alpha = .3) + 
-        ggtitle(paste0('Indirect Effect in Cai data (on untreated) \nReject null:',!ie0_test$accept, ' Pvalue = ', ie0_test$pvalue)) + 
-        ylab('indirect effect') + 
-        labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas')
-      #ggsave(here('figures',fig_loc, paste0('haj_ie1_cai_', target_name, '.png')), height = 5, width = 5)
-      
-      
-      #overall effect
-      oe = OE_sd(ypop = ypop, ygroup = yhat_group_sd2$oe_yhat_group,  
-                 hajofygroup = haj$oe_haj, boots = NULL)#boots_est$oehajboots)
-      oe_cov = oe$oe_var
-      oe = oe$oe[,,ngam]
-      oe_test = oe_sigtest(oe, oe_cov, seed = seed)
-      
-      print(list(i, 
-              names(df)[i], 
-              counter, 
-              ww, 
-              oe_test$accept2, 
-              oe_test$pvalue))
-      univar_pvals = rbind(univar_pvals, c(i, 
+      if(bivar){
+        oe = OE_sd(ypop = ypop, ygroup = yhat_group_sd2$oe_yhat_group,  
+                   hajofygroup = haj$oe_haj, boots = NULL)#boots_est$oehajboots)
+        oe_cov = oe$oe_var
+        oe = oe$oe[,,ngam]
+        oe_test = oe_sigtest(oe, oe_cov, seed = seed)
+        
+        
+        bivar_pvals = rbind(bivar_pvals, c(i, 
                                            names(df)[i], 
                                            counter, 
                                            ww, 
                                            oe_test$accept2, 
                                            oe_test$pvalue))
-      
-      oevartab = data.frame(estimated.oe = oe['est',],
-                            lb = oe['est',] - 1.96*sqrt(oe['var',]),
-                            ub = oe['est',] + 1.96*sqrt(oe['var',]),
-                            gamma = gamma_list[2,],
-                            target = target_name) 
-      oe_results[[counter]] <- oevartab
-      
-      ggplot(oevartab,
-             aes(x = gamma, y = estimated.oe)) + 
-        geom_line() + 
-        theme_minimal() +
-        theme(strip.text = element_text(size = 12),
-              text = element_text(size = 12),
-              axis.text = element_text(size = 12),
-              legend.title = element_blank(),
-              legend.position = 'bottom',
-              panel.spacing = unit(1.4, "lines")) +
-        geom_ribbon(aes(x = gamma, ymin = lb, ymax = ub),alpha = 0.2,
-                    fill = '#00BFC4', colour = rgb(0,0,0,0)) +
-        ggtitle(paste0('Intervening on ', clean_name)) + 
-        ylab('Overall Effect') + xlab(TeX(r'(\gamma)')) +
-        labs(caption = paste0('Statistically significant deviation from flat OE? ',!oe_test$accept, ' Pvalue = ', oe_test$pvalue))
-      ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', paste0(target_name), '.png')), height = 3, width = 5)
-      
+        
+        #get list of scenarios where gamma is min for degree.
+        #then only include those scenarios when testing for heterogeneity in effect
+        use_cols = gamma_list[2,]==min(gamma_list[2,])
+        oe_test_univar_bivar = oe_sigtest(oe[,use_cols], oe_cov[use_cols,use_cols], gammas_idx = c(1:sum(use_cols)), seed = seed)
+        
+        sink(file = paste0('test_bivar_univar/mindgr', ww ,'_', cov_cols[2],".txt"))
+        print(cov_cols)
+        print(ww)
+        print(oe_test_univar_bivar$accept2)
+        print(oe_test_univar_bivar$pvalue)
+        sink(file = NULL)
+        
+        oevartab = data.frame(estimated.oe = oe['est',],
+                              lb = oe['est',] - 1.96*sqrt(oe['var',]),
+                              ub = oe['est',] + 1.96*sqrt(oe['var',]),
+                              g1 = gamma_list[2,], #need to round these or make it so the label only shows 2 digits
+                              g2 = gamma_list[3,],
+                              target = target_name) 
+        bivar_oe_results[[counter]] <- oevartab
+        ggplot(oevartab,
+               aes(x = g1, y = g2, fill = estimated.oe)) + 
+          geom_raster() + 
+          scale_fill_viridis() + 
+          xlab(expression(paste(gamma['degree']))) +
+          ylab(expression(paste(gamma['rice area']))) + 
+          labs(fill = 'OE',
+               #title = 'Overall Effect In Cai Data',
+               caption = paste0('Statistically Significant? ',!oe_test$accept, ' Pvalue = ', oe_test$pvalue))
+        if(revisions == T){
+          ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', 'bivardgrrice_', target_name, '_gammacount', gamma_R, '.png')), height = 5, width = 5)
+        }else{
+          ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', 'bivardgrrice_', target_name, '.png')), height = 5, width = 5)
+        }
+        
+        newline = data.frame(
+          target_name = target_name,
+          covar = j,
+          number_of_gammas = gamma_R,
+          pvalue = oe_test$pvalue
+        )
+        if(!exists("oe_test_gamma_range_results")){
+          oe_test_gamma_range_results = data.frame(
+            'target_name' = c(),
+            'covar' = c(), 
+            'number_of_gammas' = c(),
+            'pvalue' = c())}
+        oe_test_gamma_range_results = rbind(oe_test_gamma_range_results, newline)
+        
+      }
     }
     
-    if(bivar){
-      oe = OE_sd(ypop = ypop, ygroup = yhat_group_sd2$oe_yhat_group,  
-                 hajofygroup = haj$oe_haj, boots = NULL)#boots_est$oehajboots)
-      oe_cov = oe$oe_var
-      oe = oe$oe[,,ngam]
-      oe_test = oe_sigtest(oe, oe_cov, seed = seed)
-      
-      
-      bivar_pvals = rbind(bivar_pvals, c(i, 
-                                           names(df)[i], 
-                                           counter, 
-                                           ww, 
-                                           oe_test$accept2, 
-                                           oe_test$pvalue))
-      
-      #get list of scenarios where gamma is min for degree.
-      #then only include those scenarios when testing for heterogeneity in effect
-      use_cols = gamma_list[2,]==min(gamma_list[2,])
-      oe_test_univar_bivar = oe_sigtest(oe[,use_cols], oe_cov[use_cols,use_cols], gammas_idx = c(1:sum(use_cols)), seed = seed)
-      
-      sink(file = paste0('test_bivar_univar/mindgr', ww ,'_', cov_cols[2],".txt"))
-      print(cov_cols)
-      print(ww)
-      print(oe_test_univar_bivar$accept2)
-      print(oe_test_univar_bivar$pvalue)
-      sink(file = NULL)
-
-      oevartab = data.frame(estimated.oe = oe['est',],
-                            lb = oe['est',] - 1.96*sqrt(oe['var',]),
-                            ub = oe['est',] + 1.96*sqrt(oe['var',]),
-                            g1 = gamma_list[2,], #need to round these or make it so the label only shows 2 digits
-                            g2 = gamma_list[3,],
-                            target = target_name) 
-      bivar_oe_results[[counter]] <- oevartab
-      ggplot(oevartab,
-           aes(x = g1, y = g2, fill = estimated.oe)) + 
-        geom_raster() + 
-        scale_fill_viridis() + 
-        xlab(expression(paste(gamma['degree']))) +
-        ylab(expression(paste(gamma['rice area']))) + 
-        labs(fill = 'OE',
-             #title = 'Overall Effect In Cai Data',
-             caption = paste0('Statistically Significant? ',!oe_test$accept, ' Pvalue = ', oe_test$pvalue))
-    ggsave(here('figures',fig_loc, paste0('haj_oe_cai_', 'bivardgrrice_', target_name, '.png')), height = 5, width = 5)
-    }
   }
-
 }
+
+first_row <- gsub("^X\\.|\\.$", "", colnames(oe_test_gamma_range_results))
+
+oe_test_gamma_range_results <- rbind(first_row, oe_test_gamma_range_results)
+
+# update column names
+colnames(oe_test_gamma_range_results) <- c("variable", "variable_num", "R_k", "pvalue")
+
+write.csv(oe_test_gamma_range_results %>% arrange(variable), 
+          file = '~/project_pi_lf474/sgd37/interference/figures/revision_figs_application/revisions_pval.csv')
+
 if(bivar == F){
   print(univar_pvals)
   univar_pvals = data.frame(univar_pvals)
   namess = c('col_num', 'var_name', 'size_num', 'size_name', 'sig', 'pval')
   names(univar_pvals) = namess
   univar_pvals %>%  select(var_name, size_name, pval) %>% pivot_wider(names_from = size_name,
-                             values_from = c(pval)) %>% select(var_name, `_all`, `_le80`, `_over80`)
+                                                                      values_from = c(pval)) %>% select(var_name, `_all`, `_le80`, `_over80`)
   
   de_univar_pvals = data.frame(de_univar_pvals)
   names(de_univar_pvals) = namess
@@ -539,9 +599,9 @@ for(res in list(de_results, ie1_results, ie0_results, oe_results)){ #
                                   target_pop == 'le80' ~ '<= 80 units',
                                   target_pop == 'over80' ~ '>80 units')) %>%
     mutate(target_pop = factor(target_pop, 
-                                  levels = c('All Clusters', '<= 80 units' ,'>80 units')))
-    
-
+                               levels = c('All Clusters', '<= 80 units' ,'>80 units')))
+  
+  
   
   for (i_var in unique(de_results_all$target_var)){
     #i_var = 'ricearea2010'
@@ -568,10 +628,10 @@ for(res in list(de_results, ie1_results, ie0_results, oe_results)){ #
       facet_wrap(~target_pop, scales = 'free_x') + 
       #ggtitle(paste0(estim_name, ' in Cai data')) + 
       ylab(estim_name) +  xlab(TeX(r'(\gamma)')) #+ 
-      #ggtitle(paste0('Intervening on ', clean_name2))
-      
-      #labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas') +
-
+    #ggtitle(paste0('Intervening on ', clean_name2))
+    
+    #labs(caption = 'range of gammas is the 10th and 90th percentile of cluster level trt~degree betas') +
+    
     ggsave(here('figures',fig_loc, paste0(estim_name, i_var, '.png')), height = 3, width = 7)
     
   }
@@ -590,8 +650,8 @@ theme_set(theme_minimal()+
                   strip.background = element_rect(color = rgb(0,0,0,0))))
 #bivariate case
 bivar_oe_results_all = list.rbind(bivar_oe_results) #%>%
-  #mutate(gamma_dgr = as.numeric(as.character(gamma_dgr)),
-  #       gamma_rice = as.numeric(as.character(gamma_rice)))
+#mutate(gamma_dgr = as.numeric(as.character(gamma_dgr)),
+#       gamma_rice = as.numeric(as.character(gamma_rice)))
 
 #clean labels for the clusters targeted
 bivar_oe_results_all$target_pop = sapply(str_split(bivar_oe_results_all$target, '_'), function(x) tail(x,1))
@@ -614,7 +674,7 @@ ggplot(bivar_oe_results_all,
   facet_wrap(~target_pop,scales = 'free') + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.title = element_text()) 
-  #ggtitle(paste0(estim_name, ' in Cai data'))  +  xlab(TeX(r'(\gamma)'))
+#ggtitle(paste0(estim_name, ' in Cai data'))  +  xlab(TeX(r'(\gamma)'))
 ggsave(here('figures', fig_loc, 'degreerice.png'), height = 3.5, width = 7)
 
 

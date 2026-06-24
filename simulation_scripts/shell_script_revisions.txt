@@ -1,18 +1,20 @@
-for b3 in '1'; do      
-for b4 in '2'; do
-for b5 in '1'; do
+for b3 in '0'; do      
+for b4 in '0' '2'; do
+for b5 in '0' '1'; do
 for concor in '0' '0.65'; do          
 for is_diff in '0'; do
 for alph in '0.5'; do
 for ngamma in '8' '18' '33' '66' '133'; do
-echo ${b3}${b4}${b5}${concor}${alph};               
-beta3=${b3} beta4=${b4} beta5=${b5} con=${concor} is_diff=${is_diff} alph=${alph} ngamma=${ngamma} sbatch --job-name=sim_${b3}${b4}${b5}${concor}${is_diff}${alph}${ngamma} modsimvars.sh;               
+echo ${b3}${b4}${b5}${concor}${alph}${ngamma};               
+beta3=${b3} beta4=${b4} beta5=${b5} con=${concor} is_diff=${is_diff} alph=${alph} ngamma=${ngamma} 
+sbatch --export=ALL,beta3=${b3},beta4=${b4},beta5=${b5},con=${concor},is_diff=${is_diff},alph=${alph},ngamma=${ngamma} --job-name=sim_${b3}${b4}${b5}${concor}${is_diff}${alph}${ngamma} modsimvars.sh
 sleep 1;                    
 done ;            
 done ;  
 done ;
 done ;
 done ; 
+done ;
 done ;
 
 

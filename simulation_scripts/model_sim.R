@@ -3,14 +3,15 @@ print(getwd())
 bivar = F
 alt_clus_size = F
 
+package_path <- "/nfs/roberts/project/pi_lf474/sgd37/pckgs"  # adjust as needed
 
 #packages
 library(usethis)
 library(rlang)
 library(devtools)
-#install_github("gpapadog/Interference", lib = getwd())
+#install_github("gpapadog/Interference", lib = package_path)
 library(tidyverse)
-library(Interference, lib.loc = "/gpfs/gibbs/project/forastiere/sgd37/cai")
+library(Interference, lib.loc = package_path)
 library(matrixStats)
 library(abind)
 library(parallel)
@@ -19,8 +20,8 @@ options(dplyr.summarise.inform = FALSE)
 
 #set working director
 getwd()
-setwd("~/project/cai")
-
+#setwd("~/project/cai")
+setwd('/nfs/roberts/project/pi_lf474/sgd37')
 
 #scripts to load
 source('interference/analysis_scripts/GroupIPW_sd v2.R')
@@ -63,10 +64,11 @@ if(!diffusion){
   concor = as.numeric(args[5]) #0, .65, .8
   beta_5 = as.numeric(args[6]) #for bivariate X2 spillover
   hypothetical_alpha = as.numeric(args[7])
-  if(len(args)==8){ngamma = as.numeric(args[8])}
+  ngamma = as.numeric(args[8])
+  print(paste('ngamma = ', ngamma))
   
   clust_size = '15'
-  n_clus = 300 #200
+  n_clus = 200
   epsilon = 1
 
 }else{ #diffusion == T
@@ -120,7 +122,7 @@ if(!diffusion){
   if(!bivar){ #univar
     gl = seq(from = -1.3, to = 1.3, length.out = ngamma)
     ngl = rep(0, ngamma)
-    gamma_list = rbind(rep(0, 99),
+    gamma_list = rbind(rep(0, ngamma*3),
                       c(gl, ngl, ngl),
                       c(ngl, gl, ngl),
                       c(ngl, ngl, gl))
@@ -466,8 +468,12 @@ if(diffusion){
       save.image(paste0('ms_univar_2025jul9_largealpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '.RSave'))
     }
     if(hypothetical_alpha == 0.5){
-      if(alt_clus_size == F){save.image(paste0('ms_univar_2026may16_stdalpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '_', ngam, '.RSave'))}
+      print('Made it to save step!')
+      print('Working Directory:')
+      print(getwd())
+      if(alt_clus_size == F){save.image(paste0('interference/results/ms_univar_2026may16_stdalpha','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '_', ngam, '.RSave'))}
       if(alt_clus_size == T){save.image(paste0('ms_univar_2025aug17_altclus','/scenario', idx, '_',beta_3, '_', beta_4,'_', concor,'_', beta_5, '.RSave'))}
+      print('Saved!')
     }
   }
 }

@@ -1,8 +1,8 @@
 library(igraph)
 
 #upload the data
-cai <- read.table(here("cai_data/cai.all.csv"), sep = " ", header = TRUE)
-load(here("cai_data/cai.adjacency.RData"))
+cai <- read.table(paste0(repo_loc, "interference/cai_data/cai.all.csv"), sep = " ", header = TRUE)
+load(paste0(repo_loc, "interference/cai_data/cai.adjacency.RData"))
 
 #calc degree
 cai_graph = graph_from_adjacency_matrix(A)
